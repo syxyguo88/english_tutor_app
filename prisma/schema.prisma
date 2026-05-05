@@ -1,0 +1,303 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  parent
+  child
+}
+
+enum BookStatus {
+  draft
+  processing
+  ready_for_review
+  confirmed
+}
+
+enum BookPageStatus {
+  draft
+  confirmed
+}
+
+enum TextRemovedImageStatus {
+  not_started
+  processing
+  accepted
+  failed
+  excluded
+}
+
+enum AudioSegmentStatus {
+  draft
+  confirmed
+  excluded
+}
+
+enum KnowledgeItemType {
+  word
+  phrase
+  grammar
+}
+
+enum ExerciseType {
+  fill_blank
+  picture_sentence
+  grammar_correction
+  sentence_creation
+}
+
+enum AttemptInputMode {
+  keyboard
+  speech_to_text
+}
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  books     Book[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  familyId     String
+  role         UserRole
+  displayName  String
+  email        String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  family       Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  childProfile ChildProfile?
+  attempts     Attempt[]
+
+  @@index([familyId, role])
+}
+
+model ChildProfile {
+  id                 String   @id @default(cuid())
+  childUserId        String   @unique
+  grade              String
+  interfaceLanguage  String   @default("zh-CN")
+  learningPreference Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  childUser          User     @relation(fields: [childUserId], references: [id], onDelete: Cascade)
+  interests          InterestTag[]
+  masteryStats       MasteryStat[]
+  reviewItems        ReviewQueueItem[]
+}
+
+model InterestTag {
+  id             String       @id @default(cuid())
+  childProfileId String
+  label          String
+  createdAt      DateTime     @default(now())
+  childProfile   ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, label])
+}
+
+model Book {
+  id          String     @id @default(cuid())
+  familyId    String
+  title       String
+  status      BookStatus @default(draft)
+  readingDate DateTime?
+  tags        String[]   @default([])
+  confirmedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  pages       BookPage[]
+  audioFiles  BookAudio[]
+  exercises   Exercise[]
+
+  @@index([familyId, status])
+}
+
+model BookPage {
+  id                     String                 @id @default(cuid())
+  bookId                 String
+  pageOrder              Int
+  status                 BookPageStatus         @default(draft)
+  originalImageUrl       String
+  textRemovedImageUrl    String?
+  textRemovedImageStatus TextRemovedImageStatus @default(not_started)
+  ocrDraft               Json?
+  ocrRegions             Json?
+  confirmedAt            DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  book                   Book                   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  sentences              Sentence[]
+
+  @@unique([bookId, pageOrder])
+  @@index([bookId, status])
+}
+
+model BookAudio {
+  id              String                 @id @default(cuid())
+  bookId          String
+  audioUrl        String
+  format          String
+  durationMs      Int?
+  transcriptDraft Json?
+  processingState String                 @default("not_started")
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  book            Book                   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  segments        SentenceAudioSegment[]
+}
+
+model Sentence {
+  id             String                  @id @default(cuid())
+  bookPageId     String
+  text           String
+  sourceType     String                  @default("parent_confirmed")
+  notes          String?
+  confirmedAt    DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  bookPage       BookPage                @relation(fields: [bookPageId], references: [id], onDelete: Cascade)
+  audioSegments  SentenceAudioSegment[]
+  knowledgeLinks SentenceKnowledgeLink[]
+  exercises      Exercise[]
+
+  @@index([bookPageId, confirmedAt])
+}
+
+model SentenceAudioSegment {
+  id          String             @id @default(cuid())
+  sentenceId  String
+  bookAudioId String
+  startsAtMs  Int
+  endsAtMs    Int
+  confidence  Float?
+  status      AudioSegmentStatus @default(draft)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  sentence    Sentence           @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
+  bookAudio   BookAudio          @relation(fields: [bookAudioId], references: [id], onDelete: Cascade)
+
+  @@index([sentenceId, status])
+}
+
+model KnowledgeItem {
+  id            String                  @id @default(cuid())
+  type          KnowledgeItemType
+  canonical     String
+  tags          String[]                @default([])
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  variants      KnowledgeVariant[]
+  sentenceLinks SentenceKnowledgeLink[]
+  masteryStats  MasteryStat[]
+
+  @@unique([type, canonical])
+}
+
+model KnowledgeVariant {
+  id              String                  @id @default(cuid())
+  knowledgeItemId String
+  surfaceForm     String
+  variantKind     String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  knowledgeItem   KnowledgeItem           @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
+  sentenceLinks   SentenceKnowledgeLink[]
+  masteryStats    MasteryStat[]
+
+  @@unique([knowledgeItemId, surfaceForm, variantKind])
+}
+
+model SentenceKnowledgeLink {
+  id                 String            @id @default(cuid())
+  sentenceId         String
+  knowledgeItemId    String
+  knowledgeVariantId String?
+  createdAt          DateTime          @default(now())
+  sentence           Sentence          @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
+  knowledgeItem      KnowledgeItem     @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
+  knowledgeVariant   KnowledgeVariant? @relation(fields: [knowledgeVariantId], references: [id], onDelete: SetNull)
+
+  @@unique([sentenceId, knowledgeItemId, knowledgeVariantId])
+}
+
+model Exercise {
+  id             String            @id @default(cuid())
+  bookId         String?
+  sentenceId     String?
+  type           ExerciseType
+  prompt         Json
+  expectedAnswer Json
+  targetItems    Json
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  book           Book?             @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  sentence       Sentence?         @relation(fields: [sentenceId], references: [id], onDelete: SetNull)
+  attempts       Attempt[]
+  reviewItems    ReviewQueueItem[]
+
+  @@index([type])
+}
+
+model Attempt {
+  id             String           @id @default(cuid())
+  exerciseId     String
+  childUserId    String
+  inputMode      AttemptInputMode
+  answerText     String
+  aiJudgment     Json?
+  score          Float?
+  errorTags      String[]         @default([])
+  uncertainty    Float?
+  parentOverride Json?
+  createdAt      DateTime         @default(now())
+  exercise       Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  childUser      User             @relation(fields: [childUserId], references: [id], onDelete: Cascade)
+
+  @@index([childUserId, createdAt])
+}
+
+model MasteryStat {
+  id                 String           @id @default(cuid())
+  childProfileId     String
+  knowledgeItemId    String
+  knowledgeVariantId String
+  exerciseType       ExerciseType
+  attempts           Int              @default(0)
+  errors             Int              @default(0)
+  consecutiveCorrect Int              @default(0)
+  lastAttemptedAt    DateTime?
+  lastErrorAt        DateTime?
+  masteryScore       Int              @default(0)
+  nextReviewAt       DateTime?
+  updatedAt          DateTime         @updatedAt
+  childProfile       ChildProfile     @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  knowledgeItem      KnowledgeItem    @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
+  knowledgeVariant   KnowledgeVariant @relation(fields: [knowledgeVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, knowledgeItemId, knowledgeVariantId, exerciseType])
+  @@index([childProfileId, nextReviewAt])
+}
+
+model ReviewQueueItem {
+  id             String       @id @default(cuid())
+  childProfileId String
+  exerciseId     String?
+  dueAt          DateTime
+  priority       Int          @default(0)
+  sourceReason   String
+  createdAt      DateTime     @default(now())
+  childProfile   ChildProfile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  exercise       Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+
+  @@index([childProfileId, dueAt, priority])
+}
