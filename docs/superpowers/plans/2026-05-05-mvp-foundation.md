@@ -173,6 +173,7 @@ playwright-report/
 .DS_Store
 docs/superpowers/.DS_Store
 docs/superpowers/specs/.DS_Store
+*.tsbuildinfo
 *.log
 ```
 
