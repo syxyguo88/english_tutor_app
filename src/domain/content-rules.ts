@@ -20,7 +20,7 @@ export type AudioHintPracticeGate = {
 };
 
 export function canUseSentenceForPractice(sentence: SentencePracticeGate): boolean {
-  return sentence.confirmedAt instanceof Date;
+  return sentence.confirmedAt instanceof Date && !Number.isNaN(sentence.confirmedAt.getTime());
 }
 
 export function canUsePageForPicturePractice(page: PagePicturePracticeGate): boolean {

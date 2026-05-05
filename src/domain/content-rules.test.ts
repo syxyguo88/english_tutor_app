@@ -13,6 +13,7 @@ import {
 describe("content practice gates", () => {
   it("blocks unconfirmed sentences from practice", () => {
     expect(canUseSentenceForPractice({ confirmedAt: null })).toBe(false);
+    expect(canUseSentenceForPractice({ confirmedAt: new Date("invalid") })).toBe(false);
     expect(canUseSentenceForPractice({ confirmedAt: new Date("2026-05-05") })).toBe(true);
   });
 
@@ -52,6 +53,30 @@ describe("content practice gates", () => {
       canUseAudioHintForPractice({
         status: AudioSegmentStatus.Confirmed,
         startsAtMs: 1500,
+        endsAtMs: 1500,
+      }),
+    ).toBe(false);
+
+    expect(
+      canUseAudioHintForPractice({
+        status: AudioSegmentStatus.Confirmed,
+        startsAtMs: -1,
+        endsAtMs: 1200,
+      }),
+    ).toBe(false);
+
+    expect(
+      canUseAudioHintForPractice({
+        status: AudioSegmentStatus.Confirmed,
+        startsAtMs: 1500.5,
+        endsAtMs: 2800,
+      }),
+    ).toBe(false);
+
+    expect(
+      canUseAudioHintForPractice({
+        status: AudioSegmentStatus.Confirmed,
+        startsAtMs: 2800,
         endsAtMs: 1500,
       }),
     ).toBe(false);
