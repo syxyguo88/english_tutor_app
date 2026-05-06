@@ -197,8 +197,6 @@ model KnowledgeItem {
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
   variants      KnowledgeVariant[]
-  sentenceLinks SentenceKnowledgeLink[]
-  masteryStats  MasteryStat[]
 
   @@unique([type, canonical])
 }
@@ -214,6 +212,7 @@ model KnowledgeVariant {
   sentenceLinks   SentenceKnowledgeLink[]
   masteryStats    MasteryStat[]
 
+  @@unique([id, knowledgeItemId])
   @@unique([knowledgeItemId, surfaceForm, variantKind])
 }
 
@@ -221,13 +220,14 @@ model SentenceKnowledgeLink {
   id                 String            @id @default(cuid())
   sentenceId         String
   knowledgeItemId    String
-  knowledgeVariantId String?
+  knowledgeVariantId String
   createdAt          DateTime          @default(now())
   sentence           Sentence          @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
-  knowledgeItem      KnowledgeItem     @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
-  knowledgeVariant   KnowledgeVariant? @relation(fields: [knowledgeVariantId], references: [id], onDelete: SetNull)
+  knowledgeVariant   KnowledgeVariant  @relation(fields: [knowledgeVariantId, knowledgeItemId], references: [id, knowledgeItemId], onDelete: Restrict)
 
   @@unique([sentenceId, knowledgeItemId, knowledgeVariantId])
+  @@index([knowledgeItemId])
+  @@index([knowledgeVariantId])
 }
 
 model Exercise {
@@ -281,11 +281,12 @@ model MasteryStat {
   nextReviewAt       DateTime?
   updatedAt          DateTime         @updatedAt
   childProfile       ChildProfile     @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
-  knowledgeItem      KnowledgeItem    @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
-  knowledgeVariant   KnowledgeVariant @relation(fields: [knowledgeVariantId], references: [id], onDelete: Cascade)
+  knowledgeVariant   KnowledgeVariant @relation(fields: [knowledgeVariantId, knowledgeItemId], references: [id, knowledgeItemId], onDelete: Restrict)
 
   @@unique([childProfileId, knowledgeItemId, knowledgeVariantId, exerciseType])
   @@index([childProfileId, nextReviewAt])
+  @@index([knowledgeItemId])
+  @@index([knowledgeVariantId])
 }
 
 model ReviewQueueItem {
