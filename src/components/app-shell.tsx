@@ -1,10 +1,17 @@
 import Link from "next/link";
+import type { Route } from "next";
 import type { ReactNode } from "react";
+
+export type AppShellNavItem = {
+  id: string;
+  href: Route;
+  label: string;
+};
 
 type AppShellProps = {
   title: string;
   subtitle: string;
-  navItems: Array<{ id: string; href: string; label: string }>;
+  navItems: ReadonlyArray<AppShellNavItem>;
   children: ReactNode;
 };
 

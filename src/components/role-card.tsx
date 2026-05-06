@@ -1,7 +1,8 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 type RoleCardProps = {
-  href: string;
+  href: Route;
   title: string;
   description: string;
   action: string;

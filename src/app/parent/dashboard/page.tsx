@@ -1,11 +1,11 @@
-import { AppShell } from "@/components/app-shell";
+import { AppShell, type AppShellNavItem } from "@/components/app-shell";
 
 const parentNav = [
   { id: "overview", href: "/parent/dashboard", label: "总览" },
   { id: "books", href: "/parent/dashboard", label: "绘本" },
   { id: "review", href: "/parent/dashboard", label: "待校对" },
   { id: "knowledge", href: "/parent/dashboard", label: "知识画像" },
-];
+] satisfies ReadonlyArray<AppShellNavItem>;
 
 export default function ParentDashboardPage() {
   return (
