@@ -1,13 +1,16 @@
 import { AppShell, type AppShellNavItem } from "@/components/app-shell";
+import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
 
 const parentNav = [
   { id: "overview", href: "/parent/dashboard", label: "总览" },
-  { id: "books", href: "/parent/dashboard", label: "绘本" },
+  { id: "books", href: "/parent/books/new", label: "绘本" },
   { id: "review", href: "/parent/dashboard", label: "待校对" },
   { id: "knowledge", href: "/parent/dashboard", label: "知识画像" },
 ] satisfies ReadonlyArray<AppShellNavItem>;
 
-export default function ParentDashboardPage() {
+export default async function ParentDashboardPage() {
+  const metrics = await getBookIngestionRepository().getParentDashboardMetrics();
+
   return (
     <AppShell title="家长端" subtitle="上传、校对和查看学习进展" navItems={parentNav}>
       <div
@@ -17,9 +20,9 @@ export default function ParentDashboardPage() {
           gap: 16,
         }}
       >
-        <MetricCard label="待校对绘本" value="0" />
+        <MetricCard label="待校对绘本" value={String(metrics.draftBooks)} />
         <MetricCard label="待复核 AI 判断" value="0" />
-        <MetricCard label="今日复习项" value="0" />
+        <MetricCard label="待校对页面" value={String(metrics.pagesAwaitingReview)} />
         <MetricCard label="低掌握度知识点" value="0" />
       </div>
     </AppShell>
