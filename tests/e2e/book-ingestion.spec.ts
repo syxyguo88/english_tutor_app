@@ -9,7 +9,7 @@ test("parent creates and confirms a mock-ingested book", async ({ page }) => {
   await page.getByLabel("页面图片").setInputFiles({
     name: "page-one.png",
     mimeType: "image/png",
-    buffer: Buffer.from("mock-page-one"),
+    buffer: Buffer.alloc(1_200_000, "mock-page-one"),
   });
 
   await page.getByRole("button", { name: "创建草稿并模拟识别" }).click();

@@ -2,6 +2,248 @@
 
 Date: 2026-05-06
 
+## Latest Handoff Update
+
+Updated: 2026-05-08
+
+### Current Branch And Repository State
+
+Project path:
+
+```text
+/Users/darren/code/build_ai/english_tutor_app
+```
+
+Current branch:
+
+```text
+mvp-foundation
+```
+
+Latest pushed commit on this branch:
+
+```text
+944095d feat: add book ingestion prototype
+```
+
+Current uncommitted changes:
+
+```text
+ M next.config.ts
+ M tests/e2e/book-ingestion.spec.ts
+```
+
+These two uncommitted changes fix a user-reported runtime upload failure on:
+
+```text
+http://127.0.0.1:3000/parent/books/new
+```
+
+The failure was:
+
+```text
+Body exceeded 1 MB limit
+```
+
+Root cause: Next Server Actions default to a 1 MB request body limit, and real picture-book photos can exceed that.
+
+Fix currently in the working tree:
+
+- `next.config.ts`
+  - Adds `experimental.serverActions.bodySizeLimit = "10mb"`.
+- `tests/e2e/book-ingestion.spec.ts`
+  - Updates the ingestion e2e upload to use a `1_200_000` byte image buffer so the failure is covered by regression testing.
+
+Important: this fix has been verified but not committed or pushed yet. The next agent should commit and push these two files if the user asks to save the fix.
+
+### Current Product Status
+
+The app now has two completed implementation phases:
+
+1. MVP Foundation
+2. Book Ingestion Prototype
+
+The confirmed long-term product goal is still the family-use English picture-book tutor:
+
+1. Parent uploads picture-book page photos.
+2. AI/OCR extracts English sentences, words, and phrases as draft content.
+3. Parent reviews and confirms extracted content.
+4. Confirmed content becomes official learning content.
+5. Later phases generate exercises, grade answers, update mastery, and schedule review.
+
+The current implementation is still a prototype. It intentionally does not yet include real OCR, real object storage, real audio upload/transcription/alignment, exercise generation, grading, or production authentication.
+
+### MVP Foundation Completed
+
+The original plan is:
+
+```text
+docs/superpowers/plans/2026-05-05-mvp-foundation.md
+```
+
+Tasks completed:
+
+1. Project tooling and baseline app.
+2. Domain rules for confirmation gates.
+3. Mastery calculation foundation.
+4. Database schema for MVP foundation.
+5. Role routing and app shell.
+6. Browser smoke tests.
+7. Final foundation verification.
+
+Important foundation files:
+
+- `src/domain/enums.ts`
+- `src/domain/content-rules.ts`
+- `src/domain/content-rules.test.ts`
+- `src/domain/mastery.ts`
+- `src/domain/mastery.test.ts`
+- `src/lib/auth/roles.ts`
+- `src/lib/auth/roles.test.ts`
+- `prisma/schema.prisma`
+- `src/lib/db.ts`
+- `src/components/app-shell.tsx`
+- `src/components/role-card.tsx`
+- `tests/e2e/landing.spec.ts`
+
+### Book Ingestion Prototype Completed
+
+Plan used:
+
+```text
+/Users/darren/.cursor/plans/book-ingestion_59596ec5.plan.md
+```
+
+The user explicitly said not to edit that plan file.
+
+Implemented behavior:
+
+- Parent opens `/parent/books/new`.
+- Parent enters title, optional reading date, optional comma-separated tags, and page images.
+- A deterministic mock OCR/AI extractor creates draft sentences and word/phrase candidates.
+- Parent is redirected to `/parent/books/[bookId]/review`.
+- Parent reviews page image, editable sentence drafts, and editable knowledge candidates.
+- Parent confirms a page.
+- Confirmed page state shows official confirmed sentences and sentence-specific knowledge links.
+- Unconfirmed drafts are kept out of official confirmed content.
+- Parent dashboard navigation now links “绘本” to `/parent/books/new`.
+- Parent dashboard metrics read from the prototype ingestion repository.
+
+Key files:
+
+- `src/domain/book-ingestion.ts`
+- `src/domain/book-ingestion.test.ts`
+- `src/lib/book-ingestion/mock-extractor.ts`
+- `src/lib/book-ingestion/mock-extractor.test.ts`
+- `src/lib/book-ingestion/repository.ts`
+- `src/lib/book-ingestion/repository.test.ts`
+- `src/lib/prototype-session.ts`
+- `src/lib/prototype-session.test.ts`
+- `src/app/parent/books/new/page.tsx`
+- `src/app/parent/books/new/book-draft-form.tsx`
+- `src/app/parent/books/new/actions.ts`
+- `src/app/parent/books/[bookId]/review/page.tsx`
+- `src/app/parent/books/[bookId]/review/actions.ts`
+- `tests/e2e/book-ingestion.spec.ts`
+
+Design note: local Postgres is not running in the current environment. Because of that, the Book Ingestion prototype uses a process-local in-memory repository for app/UI behavior. The interface is intentionally isolated in `src/lib/book-ingestion/repository.ts` so a future implementation can swap in Prisma persistence.
+
+Important implementation details:
+
+- `src/lib/prototype-session.ts`
+  - `ensurePrototypeSession()` returns fixed local prototype ids by default and does not touch Prisma unless a db object is explicitly injected.
+- `src/lib/book-ingestion/repository.ts`
+  - `createInMemoryBookIngestionRepository()` stores books/pages/sentences in process memory.
+  - `confirmPage()` requires `parentConfirmed: true`.
+  - Knowledge candidates are linked only to confirmed sentences whose text contains the candidate surface form.
+  - A repository `version` resets the global in-memory repository after hot module replacement so stale code does not survive Next dev reloads.
+- `src/app/parent/books/[bookId]/review/page.tsx`
+  - Uses a plain `img` for prototype `data:` URL previews and disables the Next `no-img-element` lint rule for that file.
+
+### Verification Status
+
+Latest full verification after the uncommitted upload-limit fix:
+
+```bash
+npm run test
+npm run typecheck
+npm run lint
+DATABASE_URL="postgresql://english_tutor:english_tutor@localhost:5432/english_tutor_app?schema=public" npm run prisma:validate
+npm run test:e2e
+```
+
+Result:
+
+```text
+npm run test: 7 files, 22 tests passed
+npm run typecheck: passed
+npm run lint: passed
+npm run prisma:validate: schema valid
+npm run test:e2e: 8 passed
+```
+
+The targeted large-upload regression also passed after restarting the dev server:
+
+```bash
+npm run test:e2e -- tests/e2e/book-ingestion.spec.ts
+```
+
+Result:
+
+```text
+2 passed
+```
+
+### Current Dev Server
+
+A fresh `npm run dev` was started after changing `next.config.ts` so the new Server Action body limit would be applied.
+
+If the user still sees upload errors, confirm the active dev server was restarted after the `next.config.ts` change.
+
+### Current Known Issues And Caveats
+
+- Browser extensions such as Monica can inject attributes into `<body>` and trigger Next hydration warnings. This is not app logic. Test in a clean/incognito browser profile if needed.
+- Real uploaded images are stored as data URLs in process memory for this prototype. This is not production storage.
+- Restarting the dev server clears the in-memory book drafts.
+- The upload body limit is now `10mb` in the working tree, but very large phone photos can still exceed it. Real storage should replace Server Action file transfer in a later phase.
+- The plan text said `src/lib/book-ingestion/repository.ts` would be Prisma reads/writes, but the implemented prototype uses an in-memory repository because local Postgres is unavailable. This was reviewed and accepted as a local prototype boundary, but future work should add real Prisma persistence.
+- GitHub PR creation previously failed because remote branch history had no common history with remote `main`. The branch itself has been pushed successfully.
+
+### Recommended Next Tasks
+
+1. Commit and push the current upload-limit fix if the user asks:
+
+```text
+next.config.ts
+tests/e2e/book-ingestion.spec.ts
+```
+
+Suggested commit message:
+
+```text
+fix: allow larger book page uploads
+```
+
+2. If continuing development, create the next plan for `Practice And Mastery`:
+
+- Generate exercises from confirmed ingestion content.
+- Add exercise repository/domain helpers.
+- Add child today practice UI.
+- Add deterministic grading for simple fill-blank or exact-answer flows.
+- Update mastery stats and review queue.
+
+3. Before building real OCR/storage, decide infrastructure:
+
+- PostgreSQL setup and migrations.
+- Object storage or local file storage strategy.
+- Real OCR/AI provider and response schemas.
+
+### One-Line Handoff
+
+```text
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. MVP Foundation and Book Ingestion Prototype are implemented and pushed through 944095d. Two verified but uncommitted files remain: next.config.ts and tests/e2e/book-ingestion.spec.ts, fixing the real-photo upload 1 MB Server Action limit. Commit/push those first if requested, then proceed to Practice And Mastery planning.
+```
+
 ## Repository
 
 Project path:
