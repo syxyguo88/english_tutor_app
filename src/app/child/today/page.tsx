@@ -1,6 +1,11 @@
+import { ExerciseType } from "@/domain/enums";
 import { AppShell, type AppShellNavItem } from "@/components/app-shell";
 import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
-import { getPracticeRepository, type TodayPractice } from "@/lib/practice/repository";
+import {
+  getPracticeRepository,
+  type PracticeAttemptSummary,
+  type TodayPractice,
+} from "@/lib/practice/repository";
 import { ensurePrototypeSession } from "@/lib/prototype-session";
 import { submitPracticeAttemptAction } from "./actions";
 import { toClientExercise } from "./client-practice-exercise";
@@ -21,20 +26,32 @@ export default async function ChildTodayPage() {
 
   await practiceRepository.ensurePracticeExercisesFromConfirmedContent(confirmedContent);
 
-  const practice = await practiceRepository.getTodayPractice({
-    childId: session.childUserId,
-    now: new Date(),
-    limit: 5,
-  });
+  const [practice, recentAttempts] = await Promise.all([
+    practiceRepository.getTodayPractice({
+      childId: session.childUserId,
+      now: new Date(),
+      limit: 5,
+    }),
+    practiceRepository.getRecentAttempts({
+      childId: session.childUserId,
+      limit: 10,
+    }),
+  ]);
 
   return (
     <AppShell title="今日练习" subtitle="Today" navItems={childNav}>
-      <PracticeContent practice={practice} />
+      <PracticeContent practice={practice} recentAttempts={recentAttempts} />
     </AppShell>
   );
 }
 
-function PracticeContent({ practice }: { practice: TodayPractice }) {
+function PracticeContent({
+  practice,
+  recentAttempts,
+}: {
+  practice: TodayPractice;
+  recentAttempts: PracticeAttemptSummary[];
+}) {
   return (
     <div style={{ display: "grid", gap: 16, maxWidth: 760 }}>
       <section style={cardStyle}>
@@ -46,6 +63,8 @@ function PracticeContent({ practice }: { practice: TodayPractice }) {
       </section>
 
       {practice.latestAttempt ? <AttemptFeedback practice={practice} /> : null}
+
+      {recentAttempts.length > 0 ? <RecentAttempts attempts={recentAttempts} /> : null}
 
       {practice.exercises.length > 0 ? (
         <PracticeStepper
@@ -61,6 +80,41 @@ function PracticeContent({ practice }: { practice: TodayPractice }) {
         </section>
       )}
     </div>
+  );
+}
+
+const EXERCISE_TYPE_LABEL: Record<ExerciseType, string> = {
+  [ExerciseType.FillBlank]: "填空",
+  [ExerciseType.PictureSentence]: "看图",
+  [ExerciseType.GrammarCorrection]: "语法",
+  [ExerciseType.SentenceCreation]: "造句",
+};
+
+function truncateAnswerText(text: string, maxChars: number) {
+  const normalized = text.trim();
+  if (normalized.length <= maxChars) {
+    return normalized;
+  }
+  return `${normalized.slice(0, Math.max(0, maxChars - 1))}…`;
+}
+
+function RecentAttempts({ attempts }: { attempts: PracticeAttemptSummary[] }) {
+  return (
+    <section style={cardStyle} aria-label="最近作答">
+      <h3 style={{ margin: "0 0 12px", fontSize: 22 }}>最近作答</h3>
+      <ul style={{ margin: 0, paddingLeft: 18, color: "#475569", display: "grid", gap: 8 }}>
+        {attempts.map((attempt) => (
+          <li key={attempt.id} style={{ lineHeight: 1.45 }}>
+            <span style={{ fontWeight: 600, color: attempt.isCorrect ? "#15803d" : "#b91c1c" }}>
+              {attempt.isCorrect ? "对" : "错"}
+            </span>
+            <span style={{ marginLeft: 8 }}>
+              [{EXERCISE_TYPE_LABEL[attempt.exerciseType]}] {truncateAnswerText(attempt.answerText, 40)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -46,6 +46,7 @@ export type PracticeAttemptSummary = {
   id: string;
   exerciseId: string;
   childId: string;
+  exerciseType: ExerciseType;
   inputMode: AttemptInputMode;
   answerText: string;
   isCorrect: boolean;
@@ -56,6 +57,9 @@ export type PracticeAttemptSummary = {
 };
 
 export const LOW_MASTERY_SCORE_THRESHOLD = 40;
+
+/** Max attempts stored per child in memory (ring buffer); oldest dropped after this. */
+export const RECENT_ATTEMPTS_BUFFER_SIZE = 10;
 
 export type CountLowMasteryKnowledgeInput = {
   childId: string;
@@ -85,6 +89,10 @@ export type PracticeRepository = {
     mastery: PracticeMasteryStat;
     reviewQueueItem: PracticeReviewQueueItem;
   }>;
+  getRecentAttempts(input: {
+    childId: string;
+    limit?: number;
+  }): Promise<PracticeAttemptSummary[]>;
 };
 
 type StoredPracticeExercise = PracticeExerciseDraft & {
@@ -120,7 +128,7 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
   const exerciseKeys = new Set<string>();
   const masteryStats = new Map<string, PracticeMasteryStat>();
   const reviewQueueItems: PracticeReviewQueueItem[] = [];
-  const latestAttempts = new Map<string, PracticeAttemptSummary>();
+  const recentAttemptsByChild = new Map<string, PracticeAttemptSummary[]>();
   const attemptedExerciseKeys = new Set<string>();
   let nextId = 1;
 
@@ -158,6 +166,15 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
     }
 
     return mastery;
+  }
+
+  function pushRecentAttempt(childId: string, attempt: PracticeAttemptSummary) {
+    const list = recentAttemptsByChild.get(childId) ?? [];
+    list.unshift(attempt);
+    if (list.length > RECENT_ATTEMPTS_BUFFER_SIZE) {
+      list.length = RECENT_ATTEMPTS_BUFFER_SIZE;
+    }
+    recentAttemptsByChild.set(childId, list);
   }
 
   return {
@@ -270,8 +287,17 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
 
       return {
         exercises: availableExercises,
-        latestAttempt: latestAttempts.get(input.childId) ?? null,
+        latestAttempt: recentAttemptsByChild.get(input.childId)?.[0] ?? null,
       };
+    },
+
+    async getRecentAttempts(input) {
+      const list = recentAttemptsByChild.get(input.childId) ?? [];
+      const limit = Math.min(
+        input.limit ?? RECENT_ATTEMPTS_BUFFER_SIZE,
+        RECENT_ATTEMPTS_BUFFER_SIZE,
+      );
+      return list.slice(0, limit);
     },
 
     async submitAttempt(input) {
@@ -321,6 +347,7 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
         id: createId("attempt"),
         exerciseId: exercise.id,
         childId: input.childId,
+        exerciseType: exercise.type,
         inputMode: AttemptInputMode.Keyboard,
         answerText: input.answerText,
         isCorrect: grading.isCorrect,
@@ -329,7 +356,7 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
         masteryScore: mastery.masteryScore,
         nextReviewAt,
       };
-      latestAttempts.set(input.childId, attempt);
+      pushRecentAttempt(input.childId, attempt);
 
       return {
         attempt,
@@ -347,7 +374,7 @@ const globalForPracticeRepository = globalThis as unknown as {
   practiceRepository?: PracticeRepository;
 };
 
-const PRACTICE_REPOSITORY_VERSION = "practice-v6";
+const PRACTICE_REPOSITORY_VERSION = "practice-v7";
 
 export function getPracticeRepository(): PracticeRepository {
   if (globalForPracticeRepository.practiceRepository?.version !== PRACTICE_REPOSITORY_VERSION) {

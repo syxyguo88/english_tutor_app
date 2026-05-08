@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ExerciseType } from "@/domain/enums";
-import { LOW_MASTERY_SCORE_THRESHOLD, createInMemoryPracticeRepository } from "./repository";
+import {
+  LOW_MASTERY_SCORE_THRESHOLD,
+  RECENT_ATTEMPTS_BUFFER_SIZE,
+  createInMemoryPracticeRepository,
+} from "./repository";
 
 describe("practice repository", () => {
   it("counts zero low-mastery knowledge when there are no attempts", async () => {
@@ -481,5 +485,142 @@ describe("practice repository", () => {
         },
       ],
     });
+  });
+
+  it("getRecentAttempts returns newest-first after two submits and respects limit", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+      {
+        bookId: "book_2",
+        pageId: "page_2",
+        pageOrder: 1,
+        sentenceId: "sentence_2",
+        sentenceText: "Please turn the page.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    const exerciseA = today.exercises.find((exercise) => exercise.sentenceId === "sentence_1")?.id;
+    const exerciseB = today.exercises.find((exercise) => exercise.sentenceId === "sentence_2")?.id;
+    expect(exerciseA).toBeDefined();
+    expect(exerciseB).toBeDefined();
+
+    const first = await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: exerciseA ?? "",
+      answerText: "first-answer",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+    });
+    const second = await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: exerciseB ?? "",
+      answerText: "second-answer",
+      now: new Date("2026-05-08T00:00:01.000Z"),
+    });
+
+    await expect(
+      repository.getRecentAttempts({ childId: "prototype-child" }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: second.attempt.id,
+        answerText: "second-answer",
+        exerciseType: ExerciseType.FillBlank,
+      }),
+      expect.objectContaining({
+        id: first.attempt.id,
+        answerText: "first-answer",
+        exerciseType: ExerciseType.FillBlank,
+      }),
+    ]);
+
+    await expect(
+      repository.getRecentAttempts({ childId: "prototype-child", limit: 1 }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: second.attempt.id,
+      }),
+    ]);
+  });
+
+  it("drops oldest attempts when recent buffer exceeds RECENT_ATTEMPTS_BUFFER_SIZE", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    const exerciseId = today.exercises[0]?.id ?? "";
+    const attemptIds: string[] = [];
+    const baseTime = new Date("2026-05-08T12:00:00.000Z");
+
+    for (let index = 0; index < RECENT_ATTEMPTS_BUFFER_SIZE + 1; index += 1) {
+      const result = await repository.submitAttempt({
+        childId: "prototype-child",
+        exerciseId,
+        answerText: `ans-${index}`,
+        now: new Date(baseTime.getTime() + index * 1000),
+      });
+      attemptIds.push(result.attempt.id);
+    }
+
+    const recent = await repository.getRecentAttempts({
+      childId: "prototype-child",
+      limit: RECENT_ATTEMPTS_BUFFER_SIZE,
+    });
+
+    expect(recent).toHaveLength(RECENT_ATTEMPTS_BUFFER_SIZE);
+    expect(recent.map((attempt) => attempt.id)).not.toContain(attemptIds[0]);
+    expect(recent[0]?.id).toBe(attemptIds[attemptIds.length - 1]);
+    expect(recent[RECENT_ATTEMPTS_BUFFER_SIZE - 1]?.id).toBe(attemptIds[1]);
   });
 });
