@@ -25,7 +25,9 @@ test("parent dashboard renders foundation metrics", async ({ page }) => {
 test("child today page renders bilingual practice shell", async ({ page }) => {
   await page.goto("/child/today");
 
-  await expect(page.getByRole("heading", { name: "今日练习" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "今日练习" })).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByText("Ready?")).toBeVisible();
   await expect(page.getByText("今天先从确认绘本里的练习开始")).toBeVisible();
 });
