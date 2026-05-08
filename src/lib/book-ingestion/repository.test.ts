@@ -156,4 +156,55 @@ describe("book ingestion repository", () => {
       ],
     });
   });
+
+  it("exposes only confirmed sentence content for practice generation", async () => {
+    const repository = createInMemoryBookIngestionRepository();
+    const draft = await repository.createBookDraft({
+      familyId: "family_1",
+      title: "Practice Source Book",
+      pages: [
+        {
+          pageOrder: 1,
+          originalImageUrl: "data:image/png;base64,page-one",
+          ocrDraft: {
+            sourceFileName: "page-one.png",
+            sentences: [{ text: "I can see page one." }],
+            knowledgeCandidates: [
+              { type: KnowledgeItemType.Word, surfaceForm: "page", variantKind: "base" },
+            ],
+          },
+        },
+      ],
+    });
+
+    await expect(repository.getConfirmedPracticeContent()).resolves.toEqual([]);
+
+    const book = await repository.getBookForReview(draft.bookId);
+    const page = book?.pages[0];
+    await repository.confirmPage({
+      bookId: draft.bookId,
+      pageId: page?.id ?? "",
+      parentConfirmed: true,
+      sentenceDrafts: [{ text: "I can see page one." }],
+      knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "page" }],
+    });
+
+    await expect(repository.getConfirmedPracticeContent()).resolves.toMatchObject([
+      {
+        bookId: draft.bookId,
+        pageId: page?.id,
+        pageOrder: 1,
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            knowledgeItemId: expect.stringMatching(/^knowledge_item_/),
+            id: expect.stringMatching(/^knowledge_variant_/),
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+  });
 });

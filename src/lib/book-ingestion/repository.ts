@@ -30,8 +30,22 @@ export type BookReviewPage = {
   sentences: Array<{
     id: string;
     text: string;
-    knowledgeLinks: Array<NormalizedKnowledgeCandidate>;
+    knowledgeLinks: ConfirmedKnowledgeLink[];
   }>;
+};
+
+export type ConfirmedKnowledgeLink = NormalizedKnowledgeCandidate & {
+  id: string;
+  knowledgeItemId: string;
+};
+
+export type ConfirmedPracticeContent = {
+  bookId: string;
+  pageId: string;
+  pageOrder: number;
+  sentenceId: string;
+  sentenceText: string;
+  knowledgeLinks: ConfirmedKnowledgeLink[];
 };
 
 export type BookForReview = {
@@ -63,6 +77,7 @@ export type BookIngestionRepository = {
   createBookDraft(input: CreateBookDraftInput): Promise<CreateBookDraftResult>;
   getBookForReview(bookId: string): Promise<BookForReview | null>;
   confirmPage(input: ConfirmPageInput): Promise<void>;
+  getConfirmedPracticeContent(): Promise<ConfirmedPracticeContent[]>;
   getParentDashboardMetrics(): Promise<ParentDashboardMetrics>;
 };
 
@@ -175,6 +190,23 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
       }
     },
 
+    async getConfirmedPracticeContent() {
+      return Array.from(books.values()).flatMap((book) =>
+        book.pages
+          .filter((page) => page.status === BookPageStatus.Confirmed)
+          .flatMap((page) =>
+            page.sentences.map((sentence) => ({
+              bookId: book.id,
+              pageId: page.id,
+              pageOrder: page.pageOrder,
+              sentenceId: sentence.id,
+              sentenceText: sentence.text,
+              knowledgeLinks: sentence.knowledgeLinks,
+            })),
+          ),
+      );
+    },
+
     async getParentDashboardMetrics() {
       const allBooks = Array.from(books.values());
       return {
@@ -195,7 +227,7 @@ const globalForBookIngestionRepository = globalThis as unknown as {
   bookIngestionRepository?: BookIngestionRepository;
 };
 
-const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v2";
+const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v3";
 
 export function getBookIngestionRepository(): BookIngestionRepository {
   if (

@@ -27,6 +27,7 @@ export async function confirmBookPageAction(formData: FormData): Promise<void> {
   });
 
   revalidatePath(`/parent/books/${bookId}/review`);
+  revalidatePath("/child/today");
 }
 
 function parseKnowledgeItemType(value: string | undefined): KnowledgeItemType.Word | KnowledgeItemType.Phrase {
