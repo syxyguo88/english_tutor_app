@@ -3,6 +3,45 @@ import { ExerciseType } from "@/domain/enums";
 import { createInMemoryPracticeRepository } from "./repository";
 
 describe("practice repository", () => {
+  it("creates today's deterministic practice set from confirmed content", async () => {
+    const repository = createInMemoryPracticeRepository();
+
+    await repository.ensurePracticeExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        pageImageUrl: "data:image/png;base64,page-one",
+        sentenceId: "sentence_1",
+        sentenceText: "This is a good book.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "good book",
+            canonical: "good book",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    await expect(
+      repository.getTodayPractice({
+        childId: "prototype-child",
+        now: new Date("2026-05-08T00:00:00.000Z"),
+        limit: 5,
+      }),
+    ).resolves.toMatchObject({
+      exercises: [
+        { type: ExerciseType.SentenceCreation },
+        { type: ExerciseType.GrammarCorrection },
+        { type: ExerciseType.PictureSentence },
+        { type: ExerciseType.FillBlank },
+      ],
+    });
+  });
+
   it("creates today's fill-blank practice from confirmed content", async () => {
     const repository = createInMemoryPracticeRepository();
 

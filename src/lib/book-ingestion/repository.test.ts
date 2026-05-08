@@ -194,6 +194,7 @@ describe("book ingestion repository", () => {
         bookId: draft.bookId,
         pageId: page?.id,
         pageOrder: 1,
+        pageImageUrl: "data:image/png;base64,page-one",
         sentenceText: "I can see page one.",
         knowledgeLinks: [
           {

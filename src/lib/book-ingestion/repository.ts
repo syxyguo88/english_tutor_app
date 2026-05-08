@@ -43,6 +43,7 @@ export type ConfirmedPracticeContent = {
   bookId: string;
   pageId: string;
   pageOrder: number;
+  pageImageUrl: string;
   sentenceId: string;
   sentenceText: string;
   knowledgeLinks: ConfirmedKnowledgeLink[];
@@ -199,6 +200,7 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
               bookId: book.id,
               pageId: page.id,
               pageOrder: page.pageOrder,
+              pageImageUrl: page.originalImageUrl,
               sentenceId: sentence.id,
               sentenceText: sentence.text,
               knowledgeLinks: sentence.knowledgeLinks,
@@ -227,7 +229,7 @@ const globalForBookIngestionRepository = globalThis as unknown as {
   bookIngestionRepository?: BookIngestionRepository;
 };
 
-const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v3";
+const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v4";
 
 export function getBookIngestionRepository(): BookIngestionRepository {
   if (

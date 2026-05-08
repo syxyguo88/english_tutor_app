@@ -5,9 +5,10 @@ import {
   scheduleNextReview,
 } from "@/domain/mastery";
 import {
+  generateDeterministicPracticeExercises,
   generateFillBlankExercise,
-  gradeFillBlankAnswer,
-  type FillBlankExerciseDraft,
+  gradePracticeAnswer,
+  type PracticeExerciseDraft,
   type PracticeKnowledgeTarget,
 } from "@/domain/practice";
 
@@ -15,6 +16,7 @@ export type ConfirmedPracticeSentence = {
   bookId: string;
   pageId: string;
   pageOrder: number;
+  pageImageUrl?: string;
   sentenceId: string;
   sentenceText: string;
   knowledgeLinks: Array<
@@ -24,7 +26,7 @@ export type ConfirmedPracticeSentence = {
   >;
 };
 
-export type TodayPracticeExercise = StoredFillBlankExercise & {
+export type TodayPracticeExercise = StoredPracticeExercise & {
   mastery: PracticeMasteryStat;
 };
 
@@ -55,6 +57,9 @@ export type PracticeAttemptSummary = {
 
 export type PracticeRepository = {
   version: string;
+  ensurePracticeExercisesFromConfirmedContent(
+    sentences: ConfirmedPracticeSentence[],
+  ): Promise<void>;
   ensureFillBlankExercisesFromConfirmedContent(
     sentences: ConfirmedPracticeSentence[],
   ): Promise<void>;
@@ -73,7 +78,7 @@ export type PracticeRepository = {
   }>;
 };
 
-type StoredFillBlankExercise = FillBlankExerciseDraft & {
+type StoredPracticeExercise = PracticeExerciseDraft & {
   id: string;
   createdOrder: number;
 };
@@ -102,7 +107,7 @@ type PracticeReviewQueueItem = {
 };
 
 export function createInMemoryPracticeRepository(): PracticeRepository {
-  const exercises = new Map<string, StoredFillBlankExercise>();
+  const exercises = new Map<string, StoredPracticeExercise>();
   const exerciseKeys = new Set<string>();
   const masteryStats = new Map<string, PracticeMasteryStat>();
   const reviewQueueItems: PracticeReviewQueueItem[] = [];
@@ -116,7 +121,7 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
     return id;
   }
 
-  function getMastery(childId: string, exercise: StoredFillBlankExercise): PracticeMasteryStat {
+  function getMastery(childId: string, exercise: StoredPracticeExercise): PracticeMasteryStat {
     const target = exercise.targetItems[0];
     const key = createMasteryKey({
       childId,
@@ -149,6 +154,44 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
   return {
     version: PRACTICE_REPOSITORY_VERSION,
 
+    async ensurePracticeExercisesFromConfirmedContent(sentences) {
+      for (const sentence of sentences) {
+        if (!sentence.pageImageUrl) {
+          await this.ensureFillBlankExercisesFromConfirmedContent([sentence]);
+          continue;
+        }
+
+        const drafts = generateDeterministicPracticeExercises({
+          bookId: sentence.bookId,
+          pageId: sentence.pageId,
+          pageImageUrl: sentence.pageImageUrl,
+          sentenceId: sentence.sentenceId,
+          sentenceText: sentence.sentenceText,
+          knowledgeLinks: sentence.knowledgeLinks.map((link) => ({
+            ...link,
+            knowledgeVariantId: link.id,
+          })),
+        });
+
+        for (const draft of drafts) {
+          const target = draft.targetItems[0];
+          const exerciseKey = `${draft.sentenceId}:${draft.type}:${target.knowledgeVariantId}`;
+
+          if (exerciseKeys.has(exerciseKey)) {
+            continue;
+          }
+
+          exerciseKeys.add(exerciseKey);
+          const exercise: StoredPracticeExercise = {
+            ...draft,
+            id: createId("exercise"),
+            createdOrder: nextId,
+          };
+          exercises.set(exercise.id, exercise);
+        }
+      }
+    },
+
     async ensureFillBlankExercisesFromConfirmedContent(sentences) {
       for (const sentence of sentences) {
         const draft = generateFillBlankExercise({
@@ -173,7 +216,7 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
         }
 
         exerciseKeys.add(exerciseKey);
-        const exercise: StoredFillBlankExercise = {
+        const exercise: StoredPracticeExercise = {
           ...draft,
           id: createId("exercise"),
           createdOrder: nextId,
@@ -212,8 +255,9 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
         throw new Error("Practice exercise was not found");
       }
 
-      const grading = gradeFillBlankAnswer({
-        expectedAnswer: exercise.expectedAnswer.text,
+      const grading = gradePracticeAnswer({
+        exerciseType: exercise.type,
+        expectedAnswer: exercise.expectedAnswer,
         answerText: input.answerText,
       });
       attemptedExerciseKeys.add(`${input.childId}:${exercise.id}`);
@@ -277,7 +321,7 @@ const globalForPracticeRepository = globalThis as unknown as {
   practiceRepository?: PracticeRepository;
 };
 
-const PRACTICE_REPOSITORY_VERSION = "practice-v3";
+const PRACTICE_REPOSITORY_VERSION = "practice-v5";
 
 export function getPracticeRepository(): PracticeRepository {
   if (globalForPracticeRepository.practiceRepository?.version !== PRACTICE_REPOSITORY_VERSION) {

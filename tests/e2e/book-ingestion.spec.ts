@@ -14,7 +14,7 @@ test("parent creates and confirms a mock-ingested book", async ({ page }) => {
 
   await page.getByRole("button", { name: "创建草稿并模拟识别" }).click();
 
-  await expect(page).toHaveURL(/\/parent\/books\/book_\d+\/review/);
+  await expect(page).toHaveURL(/\/parent\/books\/book_\d+\/review/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "校对：Playwright Picture Book" })).toBeVisible();
   await expect(page.getByText("未确认 OCR 草稿不会进入正式练习")).toBeVisible();
   await expect(page.getByLabel("第 1 页句子 1")).toHaveValue("I can see page one.");

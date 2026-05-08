@@ -27,5 +27,5 @@ test("child today page renders bilingual practice shell", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "今日练习" })).toBeVisible();
   await expect(page.getByText("Ready?")).toBeVisible();
-  await expect(page.getByText("今天先从确认绘本里的填空题开始")).toBeVisible();
+  await expect(page.getByText("今天先从确认绘本里的练习开始")).toBeVisible();
 });
