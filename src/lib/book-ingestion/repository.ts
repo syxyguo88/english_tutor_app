@@ -5,7 +5,9 @@ import {
   type SentenceDraftInput,
 } from "@/domain/book-ingestion";
 import { BookPageStatus, BookStatus, type KnowledgeItemType } from "@/domain/enums";
+import { prisma } from "@/lib/db";
 import type { MockExtractedPageDraft, MockPageOcrDraft } from "./mock-extractor";
+import { createPrismaBookIngestionRepository } from "./prisma-book-repository";
 
 export type CreateBookDraftInput = {
   familyId: string;
@@ -229,15 +231,17 @@ const globalForBookIngestionRepository = globalThis as unknown as {
   bookIngestionRepository?: BookIngestionRepository;
 };
 
-const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v4";
+const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v5";
 
 export function getBookIngestionRepository(): BookIngestionRepository {
   if (
     globalForBookIngestionRepository.bookIngestionRepository?.version !==
     BOOK_INGESTION_REPOSITORY_VERSION
   ) {
-    globalForBookIngestionRepository.bookIngestionRepository =
-      createInMemoryBookIngestionRepository();
+    globalForBookIngestionRepository.bookIngestionRepository = createPrismaBookIngestionRepository(
+      prisma,
+      BOOK_INGESTION_REPOSITORY_VERSION,
+    );
   }
 
   return globalForBookIngestionRepository.bookIngestionRepository;
