@@ -192,7 +192,6 @@ function attemptRowToSummary(
 
 export function createPrismaPracticeRepository(
   db: PrismaClient,
-  version: string,
 ): PracticeRepository {
   async function nextCreatedOrder(tx: Pick<PrismaClient, "exercise">): Promise<number> {
     const agg = await tx.exercise.aggregate({ _max: { createdOrder: true } });
@@ -238,8 +237,6 @@ export function createPrismaPracticeRepository(
   }
 
   return {
-    version,
-
     async ensurePracticeExercisesFromConfirmedContent(sentences: ConfirmedPracticeSentence[]) {
       for (const sentence of sentences) {
         if (!sentence.pageImageUrl) {

@@ -71,7 +71,6 @@ export type CountLowMasteryKnowledgeInput = {
 };
 
 export type PracticeRepository = {
-  version: string;
   ensurePracticeExercisesFromConfirmedContent(
     sentences: ConfirmedPracticeSentence[],
   ): Promise<void>;
@@ -181,8 +180,6 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
   }
 
   return {
-    version: PRACTICE_REPOSITORY_VERSION,
-
     async ensurePracticeExercisesFromConfirmedContent(sentences) {
       for (const sentence of sentences) {
         if (!sentence.pageImageUrl) {
@@ -377,14 +374,10 @@ const globalForPracticeRepository = globalThis as unknown as {
   practiceRepository?: PracticeRepository;
 };
 
-const PRACTICE_REPOSITORY_VERSION = "practice-v8";
-
 export function getPracticeRepository(): PracticeRepository {
-  if (globalForPracticeRepository.practiceRepository?.version !== PRACTICE_REPOSITORY_VERSION) {
-    globalForPracticeRepository.practiceRepository = createPrismaPracticeRepository(
-      prisma,
-      PRACTICE_REPOSITORY_VERSION,
-    );
+  // Restart the dev server after changing the repository implementation.
+  if (!globalForPracticeRepository.practiceRepository) {
+    globalForPracticeRepository.practiceRepository = createPrismaPracticeRepository(prisma);
   }
 
   return globalForPracticeRepository.practiceRepository;

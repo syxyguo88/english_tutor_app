@@ -140,11 +140,8 @@ type ResolvedKnowledgeVariant = NormalizedKnowledgeCandidate & {
 
 export function createPrismaBookIngestionRepository(
   db: PrismaClient,
-  repositoryVersion: string,
 ): BookIngestionRepository {
   return {
-    version: repositoryVersion,
-
     async createBookDraft(input: CreateBookDraftInput): Promise<CreateBookDraftResult> {
       const bookId = newBookId();
 

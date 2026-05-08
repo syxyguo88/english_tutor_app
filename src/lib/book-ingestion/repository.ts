@@ -76,7 +76,6 @@ export type ParentDashboardMetrics = {
 };
 
 export type BookIngestionRepository = {
-  version: string;
   createBookDraft(input: CreateBookDraftInput): Promise<CreateBookDraftResult>;
   getBookForReview(bookId: string): Promise<BookForReview | null>;
   confirmPage(input: ConfirmPageInput): Promise<void>;
@@ -136,8 +135,6 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
   }
 
   return {
-    version: BOOK_INGESTION_REPOSITORY_VERSION,
-
     async createBookDraft(input) {
       const bookId = createId("book");
       const book: BookForReview = {
@@ -231,17 +228,11 @@ const globalForBookIngestionRepository = globalThis as unknown as {
   bookIngestionRepository?: BookIngestionRepository;
 };
 
-const BOOK_INGESTION_REPOSITORY_VERSION = "book-ingestion-v5";
-
 export function getBookIngestionRepository(): BookIngestionRepository {
-  if (
-    globalForBookIngestionRepository.bookIngestionRepository?.version !==
-    BOOK_INGESTION_REPOSITORY_VERSION
-  ) {
-    globalForBookIngestionRepository.bookIngestionRepository = createPrismaBookIngestionRepository(
-      prisma,
-      BOOK_INGESTION_REPOSITORY_VERSION,
-    );
+  // Restart the dev server after changing the repository implementation.
+  if (!globalForBookIngestionRepository.bookIngestionRepository) {
+    globalForBookIngestionRepository.bookIngestionRepository =
+      createPrismaBookIngestionRepository(prisma);
   }
 
   return globalForBookIngestionRepository.bookIngestionRepository;
