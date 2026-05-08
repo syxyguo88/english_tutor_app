@@ -1,8 +1,164 @@
 import { describe, expect, it } from "vitest";
 import { ExerciseType } from "@/domain/enums";
-import { createInMemoryPracticeRepository } from "./repository";
+import { LOW_MASTERY_SCORE_THRESHOLD, createInMemoryPracticeRepository } from "./repository";
 
 describe("practice repository", () => {
+  it("counts zero low-mastery knowledge when there are no attempts", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    await expect(
+      repository.countLowMasteryKnowledge({ childId: "prototype-child" }),
+    ).resolves.toBe(0);
+  });
+
+  it("includes a mastery row in low-mastery count after a wrong attempt drops score below the threshold", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: today.exercises[0]?.id ?? "",
+      answerText: "wrong",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+    });
+
+    await expect(
+      repository.countLowMasteryKnowledge({ childId: "prototype-child" }),
+    ).resolves.toBe(1);
+  });
+
+  it("does not count low mastery for a different child", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: today.exercises[0]?.id ?? "",
+      answerText: "wrong",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+    });
+
+    await expect(
+      repository.countLowMasteryKnowledge({ childId: "other-child" }),
+    ).resolves.toBe(0);
+  });
+
+  it("excludes scores at or above the threshold and respects a custom threshold", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: today.exercises[0]?.id ?? "",
+      answerText: " Page ",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+    });
+
+    await expect(
+      repository.countLowMasteryKnowledge({
+        childId: "prototype-child",
+        masteryScoreThreshold: LOW_MASTERY_SCORE_THRESHOLD,
+      }),
+    ).resolves.toBe(1);
+
+    await expect(
+      repository.countLowMasteryKnowledge({
+        childId: "prototype-child",
+        masteryScoreThreshold: 8,
+      }),
+    ).resolves.toBe(0);
+  });
+
   it("creates today's deterministic practice set from confirmed content", async () => {
     const repository = createInMemoryPracticeRepository();
 

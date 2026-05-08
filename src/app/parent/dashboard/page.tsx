@@ -1,5 +1,7 @@
 import { AppShell, type AppShellNavItem } from "@/components/app-shell";
 import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
+import { getPracticeRepository } from "@/lib/practice/repository";
+import { ensurePrototypeSession } from "@/lib/prototype-session";
 
 const parentNav = [
   { id: "overview", href: "/parent/dashboard", label: "总览" },
@@ -9,7 +11,11 @@ const parentNav = [
 ] satisfies ReadonlyArray<AppShellNavItem>;
 
 export default async function ParentDashboardPage() {
+  const session = await ensurePrototypeSession();
   const metrics = await getBookIngestionRepository().getParentDashboardMetrics();
+  const lowMasteryKnowledgeCount = await getPracticeRepository().countLowMasteryKnowledge({
+    childId: session.childUserId,
+  });
 
   return (
     <AppShell title="家长端" subtitle="上传、校对和查看学习进展" navItems={parentNav}>
@@ -23,7 +29,7 @@ export default async function ParentDashboardPage() {
         <MetricCard label="待校对绘本" value={String(metrics.draftBooks)} />
         <MetricCard label="待复核 AI 判断" value="0" />
         <MetricCard label="待校对页面" value={String(metrics.pagesAwaitingReview)} />
-        <MetricCard label="低掌握度知识点" value="0" />
+        <MetricCard label="低掌握度知识点" value={String(lowMasteryKnowledgeCount)} />
       </div>
     </AppShell>
   );

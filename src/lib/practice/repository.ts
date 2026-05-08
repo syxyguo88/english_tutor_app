@@ -55,6 +55,14 @@ export type PracticeAttemptSummary = {
   nextReviewAt: Date;
 };
 
+export const LOW_MASTERY_SCORE_THRESHOLD = 40;
+
+export type CountLowMasteryKnowledgeInput = {
+  childId: string;
+  /** Mastery scores strictly below this value count as low mastery. Defaults to {@link LOW_MASTERY_SCORE_THRESHOLD}. */
+  masteryScoreThreshold?: number;
+};
+
 export type PracticeRepository = {
   version: string;
   ensurePracticeExercisesFromConfirmedContent(
@@ -68,6 +76,7 @@ export type PracticeRepository = {
     now: Date;
     limit: number;
   }): Promise<TodayPractice>;
+  countLowMasteryKnowledge(input: CountLowMasteryKnowledgeInput): Promise<number>;
   submitAttempt(input: SubmitPracticeAttemptInput): Promise<{
     attempt: PracticeAttemptSummary;
     answerText: string;
@@ -225,6 +234,23 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
       }
     },
 
+    async countLowMasteryKnowledge(input) {
+      const threshold = input.masteryScoreThreshold ?? LOW_MASTERY_SCORE_THRESHOLD;
+      let count = 0;
+      for (const stat of masteryStats.values()) {
+        if (stat.childId !== input.childId) {
+          continue;
+        }
+        if (stat.attempts < 1) {
+          continue;
+        }
+        if (stat.masteryScore < threshold) {
+          count += 1;
+        }
+      }
+      return count;
+    },
+
     async getTodayPractice(input) {
       const availableExercises = Array.from(exercises.values())
         .sort((left, right) => right.createdOrder - left.createdOrder)
@@ -321,7 +347,7 @@ const globalForPracticeRepository = globalThis as unknown as {
   practiceRepository?: PracticeRepository;
 };
 
-const PRACTICE_REPOSITORY_VERSION = "practice-v5";
+const PRACTICE_REPOSITORY_VERSION = "practice-v6";
 
 export function getPracticeRepository(): PracticeRepository {
   if (globalForPracticeRepository.practiceRepository?.version !== PRACTICE_REPOSITORY_VERSION) {
