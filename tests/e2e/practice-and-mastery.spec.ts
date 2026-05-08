@@ -16,14 +16,18 @@ test("child sees expanded deterministic practice types and answers one item", as
   await expect(page.getByText("已确认内容")).toBeVisible();
 
   await page.goto("/child/today");
-  await expect(page.getByRole("heading", { name: "今日练习" })).toBeVisible();
-  await expect(page.getByLabel("填空练习").first()).toBeVisible();
-  await expect(page.getByLabel("看图说句子练习").first()).toBeVisible();
-  await expect(page.getByLabel("语法找错练习").first()).toBeVisible();
-  await expect(page.getByLabel("造句练习").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "今日练习" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/第\s*1\s*\/\s*4\s*题/)).toBeVisible();
 
-  await page.getByLabel("造句答案").first().fill("I write the page about a good book.");
-  await page.getByRole("button", { name: "提交造句" }).first().click();
+  await page.getByRole("button", { name: "下一题" }).click();
+  await expect(page.getByText(/第\s*2\s*\/\s*4\s*题/)).toBeVisible();
+  await page.getByRole("button", { name: "上一题" }).click();
+  await expect(page.getByText(/第\s*1\s*\/\s*4\s*题/)).toBeVisible();
+
+  await expect(page.getByLabel("造句练习")).toBeVisible();
+
+  await page.getByLabel("造句答案").fill("I write the page about a good book.");
+  await page.getByRole("button", { name: "提交造句" }).click();
 
   await expect(page.getByText("答对了")).toBeVisible();
   await expect(page.getByText(/掌握分：\d+/)).toBeVisible();

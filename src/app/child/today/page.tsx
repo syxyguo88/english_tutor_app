@@ -1,14 +1,10 @@
-/* eslint-disable @next/next/no-img-element */
 import { AppShell, type AppShellNavItem } from "@/components/app-shell";
-import { ExerciseType } from "@/domain/enums";
 import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
-import {
-  getPracticeRepository,
-  type TodayPractice,
-  type TodayPracticeExercise,
-} from "@/lib/practice/repository";
+import { getPracticeRepository, type TodayPractice } from "@/lib/practice/repository";
 import { ensurePrototypeSession } from "@/lib/prototype-session";
 import { submitPracticeAttemptAction } from "./actions";
+import { toClientExercise } from "./client-practice-exercise";
+import { PracticeStepper } from "./practice-stepper";
 
 export const dynamic = "force-dynamic";
 
@@ -45,18 +41,17 @@ function PracticeContent({ practice }: { practice: TodayPractice }) {
         <p style={{ margin: "0 0 8px", color: "#64748b" }}>Ready?</p>
         <h2 style={{ margin: "0 0 12px", fontSize: 26 }}>今天先从确认绘本里的练习开始</h2>
         <p style={{ margin: 0, color: "#475569" }}>
-          当前原型会生成填空、看图说句子、语法找错和造句练习，作答后会立即更新掌握分和复习时间。
+          当前原型会生成填空、看图说句子、语法找错和造句练习；一次只做一题，可用上一题／下一题切换，作答后会立即更新掌握分和复习时间。
         </p>
       </section>
 
       {practice.latestAttempt ? <AttemptFeedback practice={practice} /> : null}
 
       {practice.exercises.length > 0 ? (
-        <div style={{ display: "grid", gap: 14 }}>
-          {practice.exercises.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
-          ))}
-        </div>
+        <PracticeStepper
+          exercises={practice.exercises.map(toClientExercise)}
+          submitAttemptAction={submitPracticeAttemptAction}
+        />
       ) : (
         <section style={cardStyle}>
           <h3 style={{ margin: "0 0 8px", fontSize: 22 }}>今天暂无待练习题目</h3>
@@ -67,65 +62,6 @@ function PracticeContent({ practice }: { practice: TodayPractice }) {
       )}
     </div>
   );
-}
-
-function ExerciseCard({ exercise }: { exercise: TodayPracticeExercise }) {
-  const label = exerciseLabel(exercise.type);
-
-  return (
-    <section style={cardStyle} aria-label={`${label}练习`}>
-      <p style={{ margin: "0 0 8px", color: "#64748b" }}>{label}</p>
-      <ExercisePrompt exercise={exercise} />
-      <form action={submitPracticeAttemptAction} style={{ display: "grid", gap: 12 }}>
-        <input type="hidden" name="exerciseId" value={exercise.id} />
-        <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ color: "#334155", fontWeight: 700 }}>{label}答案</span>
-          <input
-            name="answer"
-            required
-            autoComplete="off"
-            aria-label={`${label}答案`}
-            style={inputStyle}
-          />
-        </label>
-        <button type="submit" style={buttonStyle}>
-          提交{label}
-        </button>
-      </form>
-    </section>
-  );
-}
-
-function ExercisePrompt({ exercise }: { exercise: TodayPracticeExercise }) {
-  switch (exercise.type) {
-    case ExerciseType.FillBlank:
-      return <h3 style={promptHeadingStyle}>{exercise.prompt.textWithBlank}</h3>;
-    case ExerciseType.PictureSentence:
-      return (
-        <div style={{ display: "grid", gap: 10 }}>
-          <p style={{ margin: 0, color: "#475569" }}>{exercise.prompt.instruction}</p>
-          <img
-            alt="看图说句子练习图片"
-            src={exercise.prompt.imageUrl}
-            style={{ maxWidth: 240, borderRadius: 8, border: "1px solid #dbe3ef" }}
-          />
-        </div>
-      );
-    case ExerciseType.GrammarCorrection:
-      return (
-        <div>
-          <p style={{ margin: "0 0 8px", color: "#475569" }}>{exercise.prompt.instruction}</p>
-          <h3 style={promptHeadingStyle}>{exercise.prompt.incorrectText}</h3>
-        </div>
-      );
-    case ExerciseType.SentenceCreation:
-      return (
-        <div>
-          <p style={{ margin: "0 0 8px", color: "#475569" }}>{exercise.prompt.instruction}</p>
-          <h3 style={promptHeadingStyle}>{exercise.prompt.targetText}</h3>
-        </div>
-      );
-  }
 }
 
 function AttemptFeedback({ practice }: { practice: TodayPractice }) {
@@ -153,38 +89,3 @@ const cardStyle: React.CSSProperties = {
   padding: 20,
 };
 
-const inputStyle: React.CSSProperties = {
-  border: "1px solid #dbe3ef",
-  borderRadius: 8,
-  minHeight: 42,
-  padding: "8px 10px",
-};
-
-const promptHeadingStyle: React.CSSProperties = {
-  margin: "0 0 14px",
-  fontSize: 24,
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: 0,
-  borderRadius: 8,
-  background: "#2563eb",
-  color: "white",
-  cursor: "pointer",
-  fontWeight: 700,
-  minHeight: 44,
-  padding: "0 16px",
-};
-
-function exerciseLabel(type: ExerciseType): string {
-  switch (type) {
-    case ExerciseType.FillBlank:
-      return "填空";
-    case ExerciseType.PictureSentence:
-      return "看图说句子";
-    case ExerciseType.GrammarCorrection:
-      return "语法找错";
-    case ExerciseType.SentenceCreation:
-      return "造句";
-  }
-}
