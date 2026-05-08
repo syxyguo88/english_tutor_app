@@ -1,0 +1,19 @@
+---
+description: Prefer subagent-driven development for Superpowers handoffs
+alwaysApply: true
+---
+
+# Default Subagent-Driven Development
+
+When continuing development from `docs/superpowers/handoffs/*` or executing a multi-step implementation plan, prefer the Superpowers `subagent-driven-development` workflow.
+
+Use the main agent as the coordinator:
+
+- Read the handoff or plan once.
+- Extract only the current task, acceptance criteria, relevant files, and constraints.
+- Dispatch one fresh subagent per implementation task.
+- Run spec compliance review before code quality review.
+- Do not send the entire handoff document to every subagent.
+- Do not mark a task complete until implementation, tests, spec review, and code quality review are complete.
+
+Do not use this workflow for tiny fixes, simple questions, or tightly coupled changes unless the user explicitly asks for it.
