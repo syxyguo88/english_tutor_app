@@ -1,19 +1,43 @@
 ---
-description: Prefer subagent-driven development for Superpowers handoffs
+description: Mandatory subagent-driven development for handoffs and multi-step plans
 alwaysApply: true
 ---
 
-# Default Subagent-Driven Development
+# Subagent-Driven Development (Mandatory Scope)
 
-When continuing development from `docs/superpowers/handoffs/*` or executing a multi-step implementation plan, prefer the Superpowers `subagent-driven-development` workflow.
+Read and follow the Superpowers skill **`subagent-driven-development`** for process detail (dispatch prompts, review order, failure handling).
 
-Use the main agent as the coordinator:
+## When this rule MUST apply
 
-- Read the handoff or plan once.
-- Extract only the current task, acceptance criteria, relevant files, and constraints.
-- Dispatch one fresh subagent per implementation task.
-- Run spec compliance review before code quality review.
-- Do not send the entire handoff document to every subagent.
-- Do not mark a task complete until implementation, tests, spec review, and code quality review are complete.
+You **MUST** use this workflow when **any** of the following is true:
 
-Do not use this workflow for tiny fixes, simple questions, or tightly coupled changes unless the user explicitly asks for it.
+- The user points at `docs/superpowers/handoffs/*`, `docs/superpowers/current-status.md`, or says they are continuing from a **handoff**.
+- The user references a **multi-step implementation plan** (e.g. under `docs/superpowers/plans/*` or an attached plan).
+- The user explicitly asks for **subagent-driven development** or **Superpowers SDD**.
+
+Until the user clearly opts out for that thread, treat these cases as **non-negotiable**.
+
+## Coordinator role (main agent)
+
+You are the **coordinator only** for in-scope work:
+
+- **MUST** read the handoff or plan **once**, then work **one task at a time**.
+- **MUST** extract for each dispatch: current task text, acceptance criteria, allowed files, and constraints — **not** the full handoff or whole plan.
+- **MUST** dispatch **one fresh subagent per implementation task** (use the **Task** tool / subagents; do not substitute inline chat for “implementation subagent”).
+- **MUST NOT** implement or edit application code yourself for those tasks (no drive-by patches, no “I’ll just do this one file”). Clarifying questions, merging subagent output, and fixing **after** a reviewer flags issues via another implementer pass are coordinator duties.
+- **MUST** run **spec compliance review** before **code quality review** after each task; loop until both pass or the user escalates.
+- **MUST NOT** mark a task complete until **implementation**, **verification** (tests / checks as specified in the plan), **spec review**, and **code quality review** are done.
+
+## Exceptions (narrow)
+
+You **MAY** skip this workflow only when:
+
+- The change is **truly trivial** (e.g. typo, single-line config comment, one obvious lint fix) **and** it does not touch behavior under the current plan; **or**
+- The user **explicitly** says to skip SDD for this request; **or**
+- The work is **tightly coupled** across many files with no separable tasks — then say so and propose splitting the plan or **brainstorming** before coding.
+
+If unsure whether something is “trivial,” **default to SDD**.
+
+## Evidence before “done”
+
+Do not claim a task or branch is complete without running the verification commands the plan or handoff expects (see **`verification-before-completion`**). Coordinator confirms outputs, not assumptions.
