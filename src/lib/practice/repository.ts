@@ -11,6 +11,9 @@ import {
   type PracticeExerciseDraft,
   type PracticeKnowledgeTarget,
 } from "@/domain/practice";
+import { prisma } from "@/lib/db";
+import { LOW_MASTERY_SCORE_THRESHOLD, RECENT_ATTEMPTS_BUFFER_SIZE } from "./constants";
+import { createPrismaPracticeRepository } from "./prisma-practice-repository";
 
 export type ConfirmedPracticeSentence = {
   bookId: string;
@@ -56,10 +59,10 @@ export type PracticeAttemptSummary = {
   nextReviewAt: Date;
 };
 
-export const LOW_MASTERY_SCORE_THRESHOLD = 40;
-
-/** Max attempts stored per child in memory (ring buffer); oldest dropped after this. */
-export const RECENT_ATTEMPTS_BUFFER_SIZE = 10;
+export {
+  LOW_MASTERY_SCORE_THRESHOLD,
+  RECENT_ATTEMPTS_BUFFER_SIZE,
+} from "./constants";
 
 export type CountLowMasteryKnowledgeInput = {
   childId: string;
@@ -374,11 +377,14 @@ const globalForPracticeRepository = globalThis as unknown as {
   practiceRepository?: PracticeRepository;
 };
 
-const PRACTICE_REPOSITORY_VERSION = "practice-v7";
+const PRACTICE_REPOSITORY_VERSION = "practice-v8";
 
 export function getPracticeRepository(): PracticeRepository {
   if (globalForPracticeRepository.practiceRepository?.version !== PRACTICE_REPOSITORY_VERSION) {
-    globalForPracticeRepository.practiceRepository = createInMemoryPracticeRepository();
+    globalForPracticeRepository.practiceRepository = createPrismaPracticeRepository(
+      prisma,
+      PRACTICE_REPOSITORY_VERSION,
+    );
   }
 
   return globalForPracticeRepository.practiceRepository;

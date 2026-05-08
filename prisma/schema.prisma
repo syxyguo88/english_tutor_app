@@ -233,11 +233,15 @@ model SentenceKnowledgeLink {
 model Exercise {
   id             String            @id @default(cuid())
   bookId         String?
+  /** Same id as book ingestion `BookPage` rows when present (picture / multi-type drafts). */
+  pageId         String?
   sentenceId     String?
   type           ExerciseType
   prompt         Json
   expectedAnswer Json
   targetItems    Json
+  /** Monotonic insert order for “newest exercises first” (matches in-memory `createdOrder`). */
+  createdOrder   Int               @default(0)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   book           Book?             @relation(fields: [bookId], references: [id], onDelete: SetNull)
@@ -246,6 +250,7 @@ model Exercise {
   reviewItems    ReviewQueueItem[]
 
   @@index([type])
+  @@index([createdOrder])
 }
 
 model Attempt {
@@ -259,6 +264,10 @@ model Attempt {
   errorTags      String[]         @default([])
   uncertainty    Float?
   parentOverride Json?
+  /** Mastery score immediately after this attempt (historical snapshot for summaries). */
+  masteryScoreAfter Int?
+  /** Next review instant after this attempt (historical snapshot). */
+  nextReviewAtAfter DateTime?
   createdAt      DateTime         @default(now())
   exercise       Exercise         @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   childUser      User             @relation(fields: [childUserId], references: [id], onDelete: Cascade)
