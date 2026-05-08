@@ -1,82 +1,81 @@
 # English Tutor App Current Status
 
-Updated: 2026-05-08 10:35 UTC+8
+Updated: 2026-05-09
 
 ## Start Here
 
-Use this file as the short handoff entry point. Read the full historical handoff only when deeper context is needed:
+Short entry point for new agents. Deep history and narrative live in:
 
 ```text
 docs/superpowers/handoffs/2026-05-06-project-handoff.md
 ```
 
-## Repository
+Persistence implementation plan (Phases A–D):
 
-- Project path: `/Users/darren/code/build_ai/english_tutor_app`
-- Branch: `mvp-foundation`
-- Latest pushed work recorded in the handoff:
-  - `c810990 feat: add practice and mastery prototype`
-  - `fe970df fix: allow larger book photo uploads`
-  - `7289842 feat: expand deterministic practice exercises`
+```text
+docs/superpowers/plans/2026-05-08-prisma-persistence.md
+```
 
-## Product State
-
-Completed prototype phases on `mvp-foundation`:
-
-1. MVP Foundation.
-2. Book Ingestion Prototype.
-3. Practice And Mastery MVP.
-4. Expanded Deterministic Practice Exercises.
-5. Larger photo upload support with a temporary `25mb` Server Action body limit.
-
-The app is still a local prototype. It does not yet include real OCR, object storage, audio processing, AI grading, Prisma-backed app data flows, or production authentication.
-
-## Current Development Guidance
-
-For multi-step work from plans or handoffs, use the project rule in:
+Subagent-driven development is **mandatory** for handoff/plan work:
 
 ```text
 .cursor/rules/default-subagent-driven-development.mdc
 ```
 
-The main agent should coordinate: read this status and the relevant plan once, give each subagent only the current task context, then run implementation, spec compliance review, and code quality review before moving on.
+## Repository
+
+- Path: `/Users/darren/code/build_ai/english_tutor_app`
+- Branch: **`mvp-foundation`**
+- Latest commits (newest first): **`6afbc4b`** → **`b391f1d`** → **`1a4215d`** → … (see handoff for full list)
+
+## Product State (runtime)
+
+Completed **prototype** capabilities include:
+
+1. MVP foundation (domain, Prisma schema, role shell).
+2. Book ingestion UI + mock OCR → **PostgreSQL** via **`src/lib/book-ingestion/prisma-book-repository.ts`** (`getBookIngestionRepository()`).
+3. Practice generation + grading → **PostgreSQL** via **`src/lib/practice/prisma-practice-repository.ts`** (`getPracticeRepository()`).
+4. Child UX: one exercise at a time (`practice-stepper.tsx`), recent attempts list, Server Actions passed from server components where needed.
+5. Parent dashboard: **低掌握度知识点** from practice DB (prototype child).
+6. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).
+7. Larger photo uploads (`next.config.ts` body limit **25mb**).
+
+**Still not production-grade:** real OCR/AI, object storage for images, real speech, production auth, CI always-on Postgres.
+
+## Persistence Rules Of Thumb
+
+- **`DATABASE_URL`** must be set for dev (e.g. copy `.env.example` → `.env`). Prisma Studio and the app both need it.
+- After pulling: **`npx prisma migrate deploy`** (or `migrate dev`) then **`npm run db:seed`** if schema/seed changed.
+- **`submitAttempt`** expects **`ChildProfile`** for `prototype-child` — seed creates this.
+- Unit tests still use **`createInMemoryBookIngestionRepository()`** and **`createInMemoryPracticeRepository()`** only; production paths use Prisma.
 
 ## Recommended Next Work
 
-Pick one next plan before implementation:
+From **`2026-05-08-prisma-persistence.md`** — **Phase D** and follow-ups:
 
-1. Prisma/Postgres persistence.
-   - Replace in-memory book ingestion repository with Prisma-backed reads and writes.
-   - Persist exercises, attempts, mastery stats, and review queue items.
-   - Map the prototype child user to `ChildProfile` for `MasteryStat`.
-2. Parent/Child UX Polish.
-   - Let the child advance through exercises one at a time.
-   - Show attempt history, streak, review due state, and next exercise navigation.
-   - Improve dashboard metrics and empty states.
-3. Real ingestion infrastructure.
-   - Add PostgreSQL workflow, object storage or local file storage, real OCR/AI schemas, text-removed images, and audio alignment.
+- Remove obsolete in-memory singleton globals if any remain; document CI/test strategy (`DATABASE_URL` for e2e).
+- Run **`npm run test:e2e`** against a running DB + dev server.
+- Optional: README/db troubleshooting (Docker Hub mirrors), integration tests behind env.
 
-## Verification Snapshot
+UX polish backlog (non-blocking): empty states, dashboard placeholders (**待复核 AI 判断**), streak/global metrics.
 
-Latest full verification recorded in the handoff:
+## Verification Snapshot (last recorded locally)
 
 ```text
-npm run test: 9 files, 35 tests passed
-npm run typecheck: passed
-npm run lint: passed
-npm run test:e2e: 10 passed
+npm run prisma:generate
+npm run typecheck  → pass
+npm run lint       → pass
+npm run test       → 9 files, 41 tests passed
 ```
 
-Restart `npm run dev` after any `next.config.ts` changes, especially changes to Server Action body size limits.
+Re-run **`npm run test:e2e`** after major persistence changes.
 
 ## Known Caveats
 
-- In-memory repositories lose data on dev server restart.
-- Real uploaded images are stored as data URLs in process memory.
-- The `25mb` upload limit is a prototype workaround, not production storage.
-- Practice generation and grading are deterministic prototypes.
-- Browser extensions can cause unrelated Next hydration warnings.
+- Images remain **data URLs or URLs stored as strings** — large payloads in Postgres; not CDN/object storage.
+- **`Exercise.createdOrder`** / concurrent `ensure*` ordering — see code review notes in prisma practice repo (prototype acceptable).
+- Browser extensions may cause spurious React hydration warnings in dev.
 
 ## One-Line Handoff
 
-Take over `/Users/darren/code/build_ai/english_tutor_app` on branch `mvp-foundation`. The prototype has completed MVP Foundation, Book Ingestion, Practice And Mastery, expanded deterministic exercises, and 25 MB upload support. Start by choosing the next plan: Prisma/Postgres persistence, Parent/Child UX Polish, or real ingestion infrastructure.
+Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app`: book ingestion and practice are **Prisma-backed** (commits through **`6afbc4b`**); local Postgres via compose + migrate + seed; child/parent UX polish partially done. Next: **Phase D** in the prisma persistence plan + **e2e/CI** hardening.

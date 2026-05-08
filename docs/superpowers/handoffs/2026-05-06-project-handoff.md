@@ -14,312 +14,82 @@ Use this full handoff as the historical record when deeper context is needed.
 
 ## Latest Handoff Update
 
-Updated: 2026-05-08 10:23 UTC+8
+Updated: 2026-05-09 (full context refresh for agent rotation)
 
-### Current Branch And Repository State
+### Branch and tip commit
 
-Project path:
+- **Path:** `/Users/darren/code/build_ai/english_tutor_app`
+- **Branch:** `mvp-foundation`
+- **Recent commits (newest first — use `git log` for truth):**
+  - `6afbc4b` — feat(practice): persist exercises, attempts, mastery via Prisma (**Phase C**)
+  - `b391f1d` — feat(book-ingestion): persist books and pages with Prisma (**Phase B**)
+  - `1a4215d` — chore(db): Postgres compose, initial migration, Prisma seed (**Phase A**)
+  - `667d34c` — feat(child): recent attempt history on `/child/today`
+  - `4d93996` — feat(parent): low mastery metric from practice repository
+  - `c28276e` — chore(rules): mandatory **subagent-driven development** (`.cursor/rules/default-subagent-driven-development.mdc`)
+  - `b441169` — feat(child): practice stepper (one exercise at a time, server action passed from server component)
 
-```text
-/Users/darren/code/build_ai/english_tutor_app
-```
+Working tree at this edit: commit documentation updates as needed.
 
-Current branch:
+### Agent workflow (mandatory for plan/handoff work)
 
-```text
-mvp-foundation
-```
+- Read **once:** `docs/superpowers/current-status.md` and the relevant section of `docs/superpowers/plans/2026-05-08-prisma-persistence.md`.
+- Follow **`.cursor/rules/default-subagent-driven-development.mdc`**: coordinator dispatches **Task/subagents** per task; **spec review then code review**; coordinator does **not** implement application code for those tasks.
 
-Latest pushed commit on this branch:
+### What runs on Postgres vs in-memory
 
-```text
-c810990 feat: add practice and mastery prototype
-fe970df fix: allow larger book photo uploads
-7289842 feat: expand deterministic practice exercises
-```
+| Layer | Runtime (`get*Repository()`) | Unit tests |
+|-------|------------------------------|------------|
+| Book ingestion | **Prisma** — `src/lib/book-ingestion/prisma-book-repository.ts` wired from `repository.ts` | `createInMemoryBookIngestionRepository()` in `repository.test.ts` |
+| Practice | **Prisma** — `src/lib/practice/prisma-practice-repository.ts` wired from `repository.ts` | `createInMemoryPracticeRepository()` in `repository.test.ts` |
 
-Most recent commit:
+Shared constants (avoid circular imports): `src/lib/practice/constants.ts` (`LOW_MASTERY_SCORE_THRESHOLD`, `RECENT_ATTEMPTS_BUFFER_SIZE`), re-exported from `repository.ts`.
 
-```text
-7289842 feat: expand deterministic practice exercises
-```
+### Database and migrations
 
-Current working tree before this handoff edit:
+- **Compose:** `docker-compose.yml` — Postgres 16, credentials align with `.env.example`.
+- **Migrations:** under `prisma/migrations/` including initial schema + later **`Exercise` ordering / `pageId` / Attempt mastery snapshot** (`20260508133000_exercise_order_page_attempt_mastery_snapshot`).
+- **Seed:** `prisma/seed.ts` — `prototype-family`, `prototype-parent`, `prototype-child`, **`ChildProfile`** with `grade: "G1"`. **`submitAttempt`** expects this profile to exist.
+- **Local setup:** copy `.env.example` → `.env` so **`DATABASE_URL`** is set (required for app, Prisma Studio, and migrations). After pull: `npx prisma migrate deploy`, `npm run db:seed`, `npm run prisma:generate`.
 
-```text
-clean
-```
+### UX notes (child / parent)
 
-If this file is modified when the next agent starts, it is likely only this handoff update and can be committed separately as documentation.
+- **`/child/today`:** `PracticeStepper` client component; **`submitPracticeAttemptAction`** passed as a prop from the server page (avoids `UnrecognizedActionError` after HMR).
+- **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` must stay in a **non-**`"use client"` module (do not call client-module helpers from RSC).
+- **Parent dashboard:** “低掌握度知识点” uses `countLowMasteryKnowledge` for the prototype child.
 
-### Current Product Status
+### Product boundaries (unchanged intent)
 
-The app now has four completed prototype phases on `mvp-foundation`:
+Still a **family prototype**: deterministic practice/OCR mock, no real AI grading, images often **data URLs stored as strings** in the DB (not object storage), no production auth. Long-term goals remain in `docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md`.
 
-1. MVP Foundation
-2. Book Ingestion Prototype
-3. Practice And Mastery MVP
-4. Expanded Deterministic Practice Exercises
-
-The confirmed long-term product goal is still the family-use English picture-book tutor:
-
-1. Parent uploads picture-book page photos.
-2. AI/OCR extracts English sentences, words, and phrases as draft content.
-3. Parent reviews and confirms extracted content.
-4. Confirmed content becomes official learning content.
-5. The app generates practice exercises.
-6. Child answers exercises.
-7. The app grades answers, updates mastery, and schedules review.
-8. Later phases add real OCR/AI, real storage, audio, persistence, and production auth.
-
-The current implementation is still a local prototype. It intentionally does not yet include real OCR, real object storage, real audio upload/transcription/alignment, real AI exercise generation/grading, Prisma-backed app data flows, or production authentication.
-
-### MVP Foundation Completed
-
-The original plan is:
-
-```text
-docs/superpowers/plans/2026-05-05-mvp-foundation.md
-```
-
-Tasks completed:
-
-1. Project tooling and baseline app.
-2. Domain rules for confirmation gates.
-3. Mastery calculation foundation.
-4. Database schema for MVP foundation.
-5. Role routing and app shell.
-6. Browser smoke tests.
-7. Final foundation verification.
-
-Important foundation files:
-
-- `src/domain/enums.ts`
-- `src/domain/content-rules.ts`
-- `src/domain/content-rules.test.ts`
-- `src/domain/mastery.ts`
-- `src/domain/mastery.test.ts`
-- `src/lib/auth/roles.ts`
-- `src/lib/auth/roles.test.ts`
-- `prisma/schema.prisma`
-- `src/lib/db.ts`
-- `src/components/app-shell.tsx`
-- `src/components/role-card.tsx`
-- `tests/e2e/landing.spec.ts`
-
-### Book Ingestion Prototype Completed
-
-Plan used:
-
-```text
-/Users/darren/.cursor/plans/book-ingestion_59596ec5.plan.md
-```
-
-The user explicitly said not to edit that plan file.
-
-Implemented behavior:
-
-- Parent opens `/parent/books/new`.
-- Parent enters title, optional reading date, optional comma-separated tags, and page images.
-- A deterministic mock OCR/AI extractor creates draft sentences and word/phrase candidates.
-- Parent is redirected to `/parent/books/[bookId]/review`.
-- Parent reviews page image, editable sentence drafts, and editable knowledge candidates.
-- Parent confirms a page.
-- Confirmed page state shows official confirmed sentences and sentence-specific knowledge links.
-- Unconfirmed drafts are kept out of official confirmed content.
-- Parent dashboard navigation links “绘本” to `/parent/books/new`.
-- Parent dashboard metrics read from the prototype ingestion repository.
-
-Important implementation details:
-
-- `src/lib/book-ingestion/repository.ts`
-  - Uses a process-local in-memory repository for app/UI behavior because local Postgres is not available.
-  - `confirmPage()` requires `parentConfirmed: true`.
-  - Knowledge candidates are linked only to confirmed sentences whose text contains the candidate surface form.
-  - `getConfirmedPracticeContent()` exposes only confirmed sentences and links for practice generation.
-  - A repository `version` resets the global in-memory repository after hot module replacement so stale code does not survive Next dev reloads.
-- `src/app/parent/books/[bookId]/review/page.tsx`
-  - Uses a plain `img` for prototype `data:` URL previews and disables the Next `no-img-element` lint rule for that file.
-- `src/app/parent/books/[bookId]/review/actions.ts`
-  - Revalidates `/child/today` after page confirmation so practice can see newly confirmed content.
-
-### Practice And Mastery MVP Completed
-
-Plan used:
-
-```text
-/Users/darren/.cursor/plans/practice_mastery_94c3981d.plan.md
-```
-
-The user explicitly said not to edit that plan file.
-
-Implemented in commit:
-
-```text
-c810990 feat: add practice and mastery prototype
-```
-
-Implemented behavior:
-
-- Parent confirms book page content in the ingestion flow.
-- `/child/today` lazily generates deterministic fill-in-the-blank exercises from confirmed content.
-- Child submits an answer with keyboard input.
-- The app grades deterministically.
-- The in-memory practice repository records an attempt summary.
-- Mastery score, streak, next review time, and review queue item are updated using `src/domain/mastery.ts`.
-- `/child/today` uses `export const dynamic = "force-dynamic"` because it reads mutable prototype repositories.
-- Newly generated unattempted exercises remain available even when the same target item has a future review date.
-
-Key files:
-
-- `src/domain/practice.ts`
-- `src/domain/practice.test.ts`
-- `src/lib/practice/repository.ts`
-- `src/lib/practice/repository.test.ts`
-- `src/app/child/today/page.tsx`
-- `src/app/child/today/actions.ts`
-- `tests/e2e/practice-and-mastery.spec.ts`
-
-### Expanded Deterministic Practice Exercises Completed
-
-Implemented in commit:
-
-```text
-7289842 feat: expand deterministic practice exercises
-```
-
-Implemented behavior:
-
-- Confirmed content can now generate all four prototype exercise types:
-  - Fill-in-the-blank.
-  - Picture-to-sentence.
-  - Grammar correction.
-  - Sentence creation.
-- `/child/today` renders multiple exercise cards rather than a single fill-in-the-blank card.
-- Each card posts through the same server action using `exerciseId` and `answer`.
-- Deterministic grading now handles:
-  - Exact normalized answers for fill blank, picture sentence, and grammar correction.
-  - Required word/phrase matching for sentence creation.
-- Sentence creation grading uses word/phrase boundary matching so `page` does not accidentally pass inside `homepage`.
-- The e2e flow verifies all four exercise cards render and submits a sentence-creation answer.
-
-### Larger Photo Upload Fix Completed
-
-Implemented in commits:
-
-```text
-84308e5 fix: allow larger book page uploads
-fe970df fix: allow larger book photo uploads
-```
-
-Issue observed by user:
-
-```text
-http://127.0.0.1:3000/parent/books/new
-An unexpected response was received from the server.
-Body exceeded 10mb limit.
-```
-
-Root cause: real phone photos can exceed the Next Server Actions body size limit. The first fix raised the limit from the default 1 MB to 10 MB; a later real upload exceeded 10 MB.
-
-Current fix:
-
-- `next.config.ts`
-  - `experimental.serverActions.bodySizeLimit = "25mb"`.
-- `tests/e2e/book-ingestion.spec.ts`
-  - Uses a `12_000_000` byte image buffer for regression coverage.
-  - The upload redirect wait is `15_000ms` because a 12 MB Server Action upload can take more than the default 5 seconds under parallel e2e load.
-
-Important: after changing `next.config.ts`, restart `npm run dev` so the new body limit applies.
-
-### Verification Status
-
-Latest full verification after expanded exercise types and the 25 MB upload fix:
+### Verification snapshot (last recorded)
 
 ```bash
-npm run test
-npm run typecheck
-npm run lint
-npm run test:e2e
+npm run prisma:generate
+npm run typecheck   # pass
+npm run lint        # pass
+npm run test        # 9 files, 41 tests pass (in-memory repository tests only)
 ```
 
-Result:
+Re-run **`npm run test:e2e`** with Postgres up and **`npm run dev`** after persistence changes. CI may need **`DATABASE_URL`** or a test DB service.
 
-```text
-npm run test: 9 files, 35 tests passed
-npm run typecheck: passed
-npm run lint: passed
-npm run test:e2e: 10 passed
-```
+### Known caveats
 
-Targeted checks also passed during development:
+- **Docker:** some networks cannot pull `postgres` from Docker Hub; use registry mirrors or install Postgres via Homebrew instead.
+- **Next.js:** `Cannot find module './NNN.js'` or stale Server Actions — delete **`.next`** and restart dev server.
+- **Prisma Studio:** requires **`DATABASE_URL`** in environment (`.env` at project root).
+- **Exercise `createdOrder`:** concurrent `ensure*` could theoretically collide under extreme parallelism (acceptable for prototype).
 
-```text
-npm run test -- src/domain/practice.test.ts
-npm run test -- src/lib/practice/repository.test.ts
-npm run test -- src/lib/book-ingestion/repository.test.ts
-npm run test:e2e -- tests/e2e/book-ingestion.spec.ts
-npm run test:e2e -- tests/e2e/practice-and-mastery.spec.ts
-```
+### Recommended next tasks
 
-Code review status:
-
-```text
-No remaining Critical or Important findings after re-review.
-```
-
-### Current Dev Server
-
-At the time of the latest work, a fresh `npm run dev` was started after changing `next.config.ts` so the new Server Action body limit would be applied.
-
-If the user still sees upload errors:
-
-1. Confirm the active dev server was restarted after the `next.config.ts` change.
-2. Confirm only one `npm run dev` process is listening on port 3000.
-3. Check server logs for `Body exceeded 25mb limit`; if present, the prototype needs real object storage or a still higher temporary limit.
-
-### Current Known Issues And Caveats
-
-- Browser extensions such as Monica can inject attributes into `<body>` and trigger Next hydration warnings. This is not app logic. Test in a clean/incognito browser profile if needed.
-- Real uploaded images are stored as data URLs in process memory for this prototype. This is not production storage.
-- Restarting the dev server clears in-memory book drafts, generated exercises, attempts, mastery stats, and review queue items.
-- The upload body limit is now `25mb`, but very large phone photos can still exceed it. Real storage should replace Server Action file transfer in a later phase.
-- Practice generation and grading are deterministic prototypes, not real AI.
-- Picture-to-sentence uses the original page image, not a text-removed image.
-- Grammar correction currently creates simple deterministic mistakes such as `is` -> `are` or `can` -> `cans`.
-- Sentence creation currently checks for required word/phrase presence with boundaries; it does not judge sentence quality.
-- The app uses a fixed prototype session id from `src/lib/prototype-session.ts`.
-- The plan text said `src/lib/book-ingestion/repository.ts` would be Prisma reads/writes, but the implemented prototype uses an in-memory repository because local Postgres is unavailable. This was reviewed and accepted as a local prototype boundary, but future work should add real Prisma persistence.
-- GitHub PR creation previously failed because remote branch history had no common history with remote `main`. The branch itself has been pushed successfully.
-
-### Recommended Next Tasks
-
-1. Create a plan for Prisma/Postgres persistence:
-
-- Replace in-memory book ingestion repository with Prisma-backed reads/writes.
-- Persist exercises, attempts, mastery stats, and review queue items.
-- Map prototype child user to `ChildProfile` for `MasteryStat`.
-- Add migration/seed/dev database workflow once local Postgres is available.
-
-2. Or create a plan for Parent/Child UX Polish:
-
-- Let child advance through exercises one at a time instead of rendering all cards at once.
-- Show attempt history, current streak, review due state, and next exercise navigation.
-- Improve parent dashboard metrics for low mastery, pending review, and recent attempts.
-- Add clearer empty states when no confirmed content exists.
-
-3. Or create a plan for real ingestion infrastructure:
-
-- PostgreSQL setup and migrations.
-- Object storage or local file storage strategy.
-- Real OCR/AI provider and response schemas.
-- Text-removed image generation strategy.
-- Audio upload/transcription/alignment strategy.
+1. **Phase D** (`docs/superpowers/plans/2026-05-08-prisma-persistence.md`): cutover cleanup, CI/e2e strategy, optional removal of dead singleton/HMR version hacks.
+2. **UX polish:** empty states; dashboard card **待复核 AI 判断** still placeholder `0`; optional README “Database quick start”.
+3. **Real ingestion / infra** (later): object storage, OCR provider, audio pipeline.
 
 ### One-Line Handoff
 
 ```text
-Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. MVP Foundation, Book Ingestion Prototype, Practice And Mastery MVP, expanded deterministic exercise types, and 25 MB photo upload support are implemented and pushed through 7289842. Latest verification passed: npm run test (9 files, 35 tests), typecheck, lint, and npm run test:e2e (10 tests). Next recommended work is Prisma/Postgres persistence or Parent/Child UX Polish.
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. Book ingestion and practice repositories use Prisma against Postgres (through 6afbc4b); docker-compose + migrations + seed; child/parent UX partially polished (stepper, recent attempts, low mastery). Read docs/superpowers/current-status.md and .cursor/rules/default-subagent-driven-development.mdc; continue Phase D from docs/superpowers/plans/2026-05-08-prisma-persistence.md.
 ```
 
 ## Repository
