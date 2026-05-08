@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: english-tutor-postgres
+    environment:
+      POSTGRES_USER: english_tutor
+      POSTGRES_PASSWORD: english_tutor
+      POSTGRES_DB: english_tutor_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
