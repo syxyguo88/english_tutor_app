@@ -51,7 +51,7 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** / **P1** complete in-repo; **P2.1** empty states and **P2.2** dashboard AI-review placeholder are implemented (commit **`feat(ux): P2 empty states…`**). Next optional work: **P2.3** streak/metrics or **P3** tech debt.
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** / **P1** complete in-repo; **P2.1** empty states and **P2.2** dashboard AI-review placeholder are implemented (see plan **P2 progress**). Next optional work: **P2.3** streak/metrics or **P3** tech debt.
 
 UX polish backlog (non-blocking): **P2.3** streak/global metrics if prioritized.
 
