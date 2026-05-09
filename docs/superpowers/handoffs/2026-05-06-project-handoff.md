@@ -10,11 +10,51 @@ For a short current-state entry point, read:
 docs/superpowers/current-status.md
 ```
 
+Prioritized next steps (verification → CI → UX):
+
+```text
+docs/superpowers/plans/2026-05-10-next-development.md
+```
+
 Use this full handoff as the historical record when deeper context is needed.
+
+## P0 checklist — ship-quality verification (next agent)
+
+**Goal:** Close **`docs/superpowers/plans/2026-05-10-next-development.md`** section **P0** before starting P1 (CI). Use **SDD** (`.cursor/rules/default-subagent-driven-development.mdc`) for multi-file work; mark items `[x]` as you finish.
+
+### P0.1 — E2E path works on a “clean” machine flow
+
+- [x] Read README **Local database** + Playwright notes; confirm **one** coherent sequence from clone → DB → seed → e2e (patch README if any step is missing or wrong).
+- [x] Start Postgres: `docker compose up -d` (or equivalent local Postgres); ensure **`.env`** exists (`cp .env.example .env`).
+- [x] `npx prisma migrate deploy` (or `npm run db:migrate` in dev), then **`npm run db:seed`**, then **`npm run prisma:generate`**.
+- [x] **`npm run playwright:install`** (minimum Chromium; document if WebKit skipped).
+- [x] **`npm run test:e2e`** (default Chromium project) — **all green**.
+- [x] Optional: **`npm run test:e2e:all`** if WebKit browsers installed; if skipped, note “WebKit not installed” in `current-status` or README troubleshooting.
+
+**Done when:** Chromium e2e passes against seeded DB; commands above are copy-pasteable for the next developer.
+
+### P0.2 — Production-like timing spot-check
+
+- [ ] **`npm run build`** succeeds with no errors.
+- [ ] **`npm run start`** (production server on port 3000 or note alternate port).
+- [ ] After warm-up, hit **`/parent/dashboard`** and **`/child/today`**; record rough latency vs same routes on **`npm run dev`** (one-line notes OK).
+- [ ] Optional: add a **Verification snapshot** line to **`docs/superpowers/current-status.md`** (build/start timing or “spot-check 2026-__-__”).
+
+**Done when:** You have a subjective sense that prod mode is acceptable; optional snapshot committed.
+
+### P0.3 — Persistence plan doc hygiene (Phase D vs reality)
+
+- [ ] Open **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** — **Phase D** section.
+- [ ] For each Phase D bullet: set **`[x]`** if done, or add a **short footnote** under the section (“Remaining: …” / “Done in commit …”).
+- [ ] If Phase D is fully satisfied, trim **“Recommended Next Work”** in **`docs/superpowers/current-status.md`** so it does not still ask for Phase D as if outstanding (point at **`2026-05-10-next-development.md`** only).
+
+**Done when:** A new agent reading the persistence plan does not get a false “Phase D still open” signal.
+
+---
 
 ## Latest Handoff Update
 
-Updated: 2026-05-09 (full context refresh for agent rotation)
+Updated: 2026-05-10 (P0 checklist for next agent)
 
 ### Branch and tip commit
 
@@ -54,6 +94,7 @@ Shared constants (avoid circular imports): `src/lib/practice/constants.ts` (`LOW
 
 ### UX notes (child / parent)
 
+- **`PROFILE_CHILD_TODAY` (perf):** Set **`PROFILE_CHILD_TODAY=1`** in dev to log **`[profile:child-today]`** for `/child/today`. **`getTodayPractice`** uses a **two-phase `Exercise` read** (light `select` for eligibility scan, then full rows by id for the few shown) because profiling showed one full `findMany` over ~120 rows was **~3s** due to large **`prompt` / `expectedAnswer` JSON**. See README subsection “`PROFILE_CHILD_TODAY`” and `src/lib/practice/prisma-practice-repository.ts`.
 - **`/child/today`:** `PracticeStepper` client component; **`submitPracticeAttemptAction`** passed as a prop from the server page (avoids `UnrecognizedActionError` after HMR).
 - **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` must stay in a **non-**`"use client"` module (do not call client-module helpers from RSC).
 - **Parent dashboard:** “低掌握度知识点” uses `countLowMasteryKnowledge` for the prototype child.
@@ -82,14 +123,14 @@ Re-run **`npm run test:e2e`** with Postgres up and **`npm run dev`** after persi
 
 ### Recommended next tasks
 
-1. **Phase D** (`docs/superpowers/plans/2026-05-08-prisma-persistence.md`): cutover cleanup, CI/e2e strategy, optional removal of dead singleton/HMR version hacks.
-2. **UX polish:** empty states; dashboard card **待复核 AI 判断** still placeholder `0`; optional README “Database quick start”.
+1. **P0 checklist** (this document, section **“P0 checklist — ship-quality verification”**): e2e path, build/start spot-check, persistence plan Phase D hygiene — then proceed to **`docs/superpowers/plans/2026-05-10-next-development.md`** P1 (CI).
+2. **UX polish (P2):** empty states; dashboard card **待复核 AI 判断** still placeholder `0`.
 3. **Real ingestion / infra** (later): object storage, OCR provider, audio pipeline.
 
 ### One-Line Handoff
 
 ```text
-Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. Book ingestion and practice repositories use Prisma against Postgres (through 6afbc4b); docker-compose + migrations + seed; child/parent UX partially polished (stepper, recent attempts, low mastery). Read docs/superpowers/current-status.md and .cursor/rules/default-subagent-driven-development.mdc; continue Phase D from docs/superpowers/plans/2026-05-08-prisma-persistence.md.
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. Read docs/superpowers/current-status.md and docs/superpowers/handoffs/2026-05-06-project-handoff.md — complete the P0 checklist (e2e, build/start spot-check, Phase D doc hygiene), then docs/superpowers/plans/2026-05-10-next-development.md. Follow .cursor/rules/default-subagent-driven-development.mdc for plan work.
 ```
 
 ## Repository
