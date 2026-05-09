@@ -35,7 +35,17 @@ import type {
   TodayPractice,
   TodayPracticeExercise,
 } from "./repository";
-import { LOW_MASTERY_SCORE_THRESHOLD, RECENT_ATTEMPTS_BUFFER_SIZE } from "./constants";
+import {
+  childTodayProfileLog,
+  childTodayProfileLogJson,
+  childTodayProfileNow,
+  isChildTodayProfiling,
+} from "@/lib/profile/child-today-profile";
+import {
+  LOW_MASTERY_SCORE_THRESHOLD,
+  RECENT_ATTEMPTS_BUFFER_SIZE,
+  TODAY_PRACTICE_EXERCISE_SCAN_CAP,
+} from "./constants";
 
 type StoredPracticeExercise = PracticeExerciseDraft & {
   id: string;
@@ -103,6 +113,17 @@ function toDomainExerciseType(type: PrismaExerciseType): ExerciseType {
       return ExerciseType.FillBlank;
   }
 }
+
+/** Columns needed to decide “due today” eligibility without loading heavy JSON blobs. */
+const exerciseTodayScanSelect = {
+  id: true,
+  createdOrder: true,
+  bookId: true,
+  pageId: true,
+  sentenceId: true,
+  type: true,
+  targetItems: true,
+} as const;
 
 function exerciseRowToStored(row: Exercise): StoredPracticeExercise {
   const type = toDomainExerciseType(row.type);
@@ -193,76 +214,117 @@ function attemptRowToSummary(
 export function createPrismaPracticeRepository(
   db: PrismaClient,
 ): PracticeRepository {
-  async function nextCreatedOrder(tx: Pick<PrismaClient, "exercise">): Promise<number> {
-    const agg = await tx.exercise.aggregate({ _max: { createdOrder: true } });
-    return (agg._max.createdOrder ?? 0) + 1;
-  }
+  async function persistNewExerciseDrafts(drafts: PracticeExerciseDraft[]): Promise<void> {
+    const byId = new Map<string, PracticeExerciseDraft>();
+    for (const draft of drafts) {
+      const target = draft.targetItems[0];
+      if (!target) {
+        continue;
+      }
+      const id = deterministicPracticeExerciseId({
+        sentenceId: draft.sentenceId,
+        exerciseType: draft.type,
+        knowledgeVariantId: target.knowledgeVariantId,
+      });
+      byId.set(id, draft);
+    }
 
-  async function upsertExerciseFromDraft(
-    draft: PracticeExerciseDraft,
-  ): Promise<void> {
-    const target = draft.targetItems[0];
-    if (!target) {
+    const unique = [...byId.values()];
+    if (unique.length === 0) {
       return;
     }
 
-    const id = deterministicPracticeExerciseId({
-      sentenceId: draft.sentenceId,
-      exerciseType: draft.type,
-      knowledgeVariantId: target.knowledgeVariantId,
-    });
-
     await db.$transaction(async (tx) => {
-      const existing = await tx.exercise.findUnique({ where: { id } });
-      if (existing) {
-        return;
-      }
-
-      const createdOrder = await nextCreatedOrder(tx);
-
-      await tx.exercise.create({
-        data: {
-          id,
-          bookId: draft.bookId || null,
-          pageId: "pageId" in draft && draft.pageId ? draft.pageId : null,
-          sentenceId: draft.sentenceId || null,
-          type: toPrismaExerciseType(draft.type),
-          prompt: draft.prompt as object,
-          expectedAnswer: draft.expectedAnswer as object,
-          targetItems: draft.targetItems as object,
-          createdOrder,
-        },
+      const ids = unique.map((draft) => {
+        const target = draft.targetItems[0]!;
+        return deterministicPracticeExerciseId({
+          sentenceId: draft.sentenceId,
+          exerciseType: draft.type,
+          knowledgeVariantId: target.knowledgeVariantId,
+        });
       });
+
+      const existingRows = await tx.exercise.findMany({
+        where: { id: { in: ids } },
+        select: { id: true },
+      });
+      const existingIds = new Set(existingRows.map((row) => row.id));
+
+      const agg = await tx.exercise.aggregate({ _max: { createdOrder: true } });
+      let nextOrder = (agg._max.createdOrder ?? 0) + 1;
+
+      for (const draft of unique) {
+        const target = draft.targetItems[0]!;
+        const id = deterministicPracticeExerciseId({
+          sentenceId: draft.sentenceId,
+          exerciseType: draft.type,
+          knowledgeVariantId: target.knowledgeVariantId,
+        });
+        if (existingIds.has(id)) {
+          continue;
+        }
+
+        await tx.exercise.create({
+          data: {
+            id,
+            bookId: draft.bookId || null,
+            pageId: "pageId" in draft && draft.pageId ? draft.pageId : null,
+            sentenceId: draft.sentenceId || null,
+            type: toPrismaExerciseType(draft.type),
+            prompt: draft.prompt as object,
+            expectedAnswer: draft.expectedAnswer as object,
+            targetItems: draft.targetItems as object,
+            createdOrder: nextOrder,
+          },
+        });
+        existingIds.add(id);
+        nextOrder += 1;
+      }
     });
   }
 
   return {
     async ensurePracticeExercisesFromConfirmedContent(sentences: ConfirmedPracticeSentence[]) {
+      const drafts: PracticeExerciseDraft[] = [];
+
       for (const sentence of sentences) {
         if (!sentence.pageImageUrl) {
-          await this.ensureFillBlankExercisesFromConfirmedContent([sentence]);
+          const draft = generateFillBlankExercise({
+            bookId: sentence.bookId,
+            sentenceId: sentence.sentenceId,
+            sentenceText: sentence.sentenceText,
+            knowledgeLinks: sentence.knowledgeLinks.map((link) => ({
+              ...link,
+              knowledgeVariantId: link.id,
+            })),
+          });
+          if (draft) {
+            drafts.push(draft);
+          }
           continue;
         }
 
-        const drafts = generateDeterministicPracticeExercises({
-          bookId: sentence.bookId,
-          pageId: sentence.pageId,
-          pageImageUrl: sentence.pageImageUrl,
-          sentenceId: sentence.sentenceId,
-          sentenceText: sentence.sentenceText,
-          knowledgeLinks: sentence.knowledgeLinks.map((link) => ({
-            ...link,
-            knowledgeVariantId: link.id,
-          })),
-        });
-
-        for (const draft of drafts) {
-          await upsertExerciseFromDraft(draft);
-        }
+        drafts.push(
+          ...generateDeterministicPracticeExercises({
+            bookId: sentence.bookId,
+            pageId: sentence.pageId,
+            pageImageUrl: sentence.pageImageUrl,
+            sentenceId: sentence.sentenceId,
+            sentenceText: sentence.sentenceText,
+            knowledgeLinks: sentence.knowledgeLinks.map((link) => ({
+              ...link,
+              knowledgeVariantId: link.id,
+            })),
+          }),
+        );
       }
+
+      await persistNewExerciseDrafts(drafts);
     },
 
     async ensureFillBlankExercisesFromConfirmedContent(sentences: ConfirmedPracticeSentence[]) {
+      const drafts: PracticeExerciseDraft[] = [];
+
       for (const sentence of sentences) {
         const draft = generateFillBlankExercise({
           bookId: sentence.bookId,
@@ -274,12 +336,12 @@ export function createPrismaPracticeRepository(
           })),
         });
 
-        if (!draft) {
-          continue;
+        if (draft) {
+          drafts.push(draft);
         }
-
-        await upsertExerciseFromDraft(draft);
       }
+
+      await persistNewExerciseDrafts(drafts);
     },
 
     async countLowMasteryKnowledge(input: CountLowMasteryKnowledgeInput) {
@@ -307,20 +369,108 @@ export function createPrismaPracticeRepository(
       now: Date;
       limit: number;
     }): Promise<TodayPractice> {
-      const exercises = await db.exercise.findMany({
-        orderBy: { createdOrder: "desc" },
-      });
+      const getTodayT0 = childTodayProfileNow();
+      const scanTake = Math.min(
+        TODAY_PRACTICE_EXERCISE_SCAN_CAP,
+        Math.max(100, input.limit * 35),
+      );
 
-      const profile = await db.childProfile.findUnique({
-        where: { childUserId: input.childId },
-      });
+      let exerciseScanRows: Awaited<
+        ReturnType<typeof db.exercise.findMany<{ select: typeof exerciseTodayScanSelect }>>
+      >;
+      let profile: ChildProfile | null;
+      let attemptedGroups;
+      let latestAttemptRow: (Attempt & { exercise: Exercise }) | null;
+
+      if (isChildTodayProfiling()) {
+        const tBatchWall = childTodayProfileNow();
+        [exerciseScanRows, profile, attemptedGroups, latestAttemptRow] = await Promise.all([
+          (async () => {
+            const t = childTodayProfileNow();
+            const rows = await db.exercise.findMany({
+              select: exerciseTodayScanSelect,
+              orderBy: { createdOrder: "desc" },
+              take: scanTake,
+            });
+            childTodayProfileLogJson({
+              phase: "getTodayPractice_exercise_scan_select",
+              durationMs: Number((childTodayProfileNow() - t).toFixed(2)),
+              exerciseScanRowCount: rows.length,
+            });
+            return rows;
+          })(),
+          (async () => {
+            const t = childTodayProfileNow();
+            const r = await db.childProfile.findUnique({
+              where: { childUserId: input.childId },
+            });
+            childTodayProfileLogJson({
+              phase: "getTodayPractice_childProfile_findUnique",
+              durationMs: Number((childTodayProfileNow() - t).toFixed(2)),
+            });
+            return r;
+          })(),
+          (async () => {
+            const t = childTodayProfileNow();
+            const r = await db.attempt.groupBy({
+              by: ["exerciseId"],
+              where: { childUserId: input.childId },
+            });
+            childTodayProfileLogJson({
+              phase: "getTodayPractice_attempt_groupBy",
+              durationMs: Number((childTodayProfileNow() - t).toFixed(2)),
+            });
+            return r;
+          })(),
+          (async () => {
+            const t = childTodayProfileNow();
+            const r = await db.attempt.findFirst({
+              where: { childUserId: input.childId },
+              orderBy: { createdAt: "desc" },
+              include: { exercise: true },
+            });
+            childTodayProfileLogJson({
+              phase: "getTodayPractice_attempt_findFirst_include_exercise",
+              durationMs: Number((childTodayProfileNow() - t).toFixed(2)),
+            });
+            return r;
+          })(),
+        ]);
+        childTodayProfileLogJson({
+          phase: "getTodayPractice_parallel_batch_wall_ms",
+          durationMs: Number((childTodayProfileNow() - tBatchWall).toFixed(2)),
+        });
+      } else {
+        [exerciseScanRows, profile, attemptedGroups, latestAttemptRow] = await Promise.all([
+          db.exercise.findMany({
+            select: exerciseTodayScanSelect,
+            orderBy: { createdOrder: "desc" },
+            take: scanTake,
+          }),
+          db.childProfile.findUnique({
+            where: { childUserId: input.childId },
+          }),
+          db.attempt.groupBy({
+            by: ["exerciseId"],
+            where: { childUserId: input.childId },
+          }),
+          db.attempt.findFirst({
+            where: { childUserId: input.childId },
+            orderBy: { createdAt: "desc" },
+            include: { exercise: true },
+          }),
+        ]);
+      }
 
       const masteryByKey = new Map<string, PracticeMasteryStat>();
 
+      let masteryRowCount = 0;
       if (profile) {
+        const tMastery = childTodayProfileNow();
         const masteryRows = await db.masteryStat.findMany({
           where: { childProfileId: profile.id },
         });
+        masteryRowCount = masteryRows.length;
         for (const row of masteryRows) {
           const key = createMasteryKey({
             childId: input.childId,
@@ -330,23 +480,76 @@ export function createPrismaPracticeRepository(
           });
           masteryByKey.set(key, masteryStatToPractice(row, input.childId));
         }
+        if (isChildTodayProfiling()) {
+          childTodayProfileLog("getTodayPractice_masteryStat_findMany", childTodayProfileNow() - tMastery, {
+            masteryStatFindManyCount: masteryRowCount,
+          });
+        }
       }
 
-      const attemptedGroups = await db.attempt.groupBy({
-        by: ["exerciseId"],
-        where: { childUserId: input.childId },
-      });
       const attemptedExerciseIds = new Set(attemptedGroups.map((g) => g.exerciseId));
 
-      const out: TodayPracticeExercise[] = [];
+      const chosenIds: string[] = [];
 
-      for (const row of exercises) {
-        const stored = exerciseRowToStored(row);
-        const target = stored.targetItems[0];
+      const tSelectLoop = childTodayProfileNow();
+      for (const row of exerciseScanRows) {
+        const targetItems = row.targetItems as unknown as PracticeKnowledgeTarget[];
+        const target = targetItems[0];
         if (!target) {
           continue;
         }
 
+        const exerciseType = toDomainExerciseType(row.type);
+        const masteryKey = createMasteryKey({
+          childId: input.childId,
+          knowledgeItemId: target.knowledgeItemId,
+          knowledgeVariantId: target.knowledgeVariantId,
+          exerciseType,
+        });
+        const mastery =
+          masteryByKey.get(masteryKey) ?? defaultMastery(input.childId, target, exerciseType);
+
+        const attempted = attemptedExerciseIds.has(row.id);
+        const eligible =
+          !attempted ||
+          !mastery.nextReviewAt ||
+          mastery.nextReviewAt <= input.now;
+
+        if (eligible) {
+          chosenIds.push(row.id);
+        }
+
+        if (chosenIds.length >= input.limit) {
+          break;
+        }
+      }
+      if (isChildTodayProfiling()) {
+        childTodayProfileLog("getTodayPractice_selection_loop", childTodayProfileNow() - tSelectLoop);
+      }
+
+      let exercisesFull: Exercise[] = [];
+      if (chosenIds.length > 0) {
+        const tFull = childTodayProfileNow();
+        const rows = await db.exercise.findMany({
+          where: { id: { in: chosenIds } },
+        });
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        exercisesFull = chosenIds
+          .map((id) => byId.get(id))
+          .filter((r): r is Exercise => r !== undefined);
+        if (isChildTodayProfiling()) {
+          childTodayProfileLogJson({
+            phase: "getTodayPractice_exercise_full_by_ids",
+            durationMs: Number((childTodayProfileNow() - tFull).toFixed(2)),
+            exerciseFullCount: exercisesFull.length,
+          });
+        }
+      }
+
+      const tBuildReturn = childTodayProfileNow();
+      const out: TodayPracticeExercise[] = exercisesFull.map((row) => {
+        const stored = exerciseRowToStored(row);
+        const target = stored.targetItems[0]!;
         const masteryKey = createMasteryKey({
           childId: input.childId,
           knowledgeItemId: target.knowledgeItemId,
@@ -354,36 +557,22 @@ export function createPrismaPracticeRepository(
           exerciseType: stored.type,
         });
         const mastery =
-          masteryByKey.get(masteryKey) ??
-          defaultMastery(input.childId, target, stored.type);
-
-        const attempted = attemptedExerciseIds.has(row.id);
-        if (!attempted) {
-          out.push({ ...stored, mastery });
-        } else {
-          const nextReviewAt = mastery.nextReviewAt;
-          if (!nextReviewAt || nextReviewAt <= input.now) {
-            out.push({ ...stored, mastery });
-          }
-        }
-
-        if (out.length >= input.limit) {
-          break;
-        }
-      }
-
-      const latestAttemptRow = await db.attempt.findFirst({
-        where: { childUserId: input.childId },
-        orderBy: { createdAt: "desc" },
-        include: { exercise: true },
+          masteryByKey.get(masteryKey) ?? defaultMastery(input.childId, target, stored.type);
+        return { ...stored, mastery };
       });
 
-      return {
+      const result: TodayPractice = {
         exercises: out,
         latestAttempt: latestAttemptRow
           ? attemptRowToSummary(latestAttemptRow)
           : null,
       };
+      if (isChildTodayProfiling()) {
+        childTodayProfileLog("getTodayPractice_build_return", childTodayProfileNow() - tBuildReturn);
+        childTodayProfileLog("getTodayPractice_total", childTodayProfileNow() - getTodayT0);
+      }
+
+      return result;
     },
 
     async getRecentAttempts(input: { childId: string; limit?: number }) {

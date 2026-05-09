@@ -1,11 +1,16 @@
 import { ExerciseType } from "@/domain/enums";
 import { AppShell, type AppShellNavItem } from "@/components/app-shell";
-import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
 import {
   getPracticeRepository,
   type PracticeAttemptSummary,
   type TodayPractice,
 } from "@/lib/practice/repository";
+import {
+  childTodayProfileLog,
+  childTodayProfileNow,
+  isChildTodayProfiling,
+} from "@/lib/profile/child-today-profile";
+import { syncConfirmedPracticeExercises } from "@/lib/practice/sync-confirmed-practice";
 import { ensurePrototypeSession } from "@/lib/prototype-session";
 import { submitPracticeAttemptAction } from "./actions";
 import { toClientExercise } from "./client-practice-exercise";
@@ -20,23 +25,52 @@ const childNav = [
 ] satisfies ReadonlyArray<AppShellNavItem>;
 
 export default async function ChildTodayPage() {
-  const session = await ensurePrototypeSession();
-  const practiceRepository = getPracticeRepository();
-  const confirmedContent = await getBookIngestionRepository().getConfirmedPracticeContent();
+  const pageT0 = childTodayProfileNow();
 
-  await practiceRepository.ensurePracticeExercisesFromConfirmedContent(confirmedContent);
+  const [session] = await Promise.all([
+    (async () => {
+      const t0 = childTodayProfileNow();
+      const s = await ensurePrototypeSession();
+      childTodayProfileLog("ensurePrototypeSession", childTodayProfileNow() - t0);
+      return s;
+    })(),
+    (async () => {
+      const t0 = childTodayProfileNow();
+      await syncConfirmedPracticeExercises();
+      childTodayProfileLog("syncConfirmedPracticeExercises", childTodayProfileNow() - t0);
+    })(),
+  ]);
+
+  const parallelSessionSyncMs = childTodayProfileNow() - pageT0;
+  if (isChildTodayProfiling()) {
+    childTodayProfileLog("parallel_session_sync_wall_ms", parallelSessionSyncMs);
+  }
+
+  const practiceRepository = getPracticeRepository();
 
   const [practice, recentAttempts] = await Promise.all([
-    practiceRepository.getTodayPractice({
-      childId: session.childUserId,
-      now: new Date(),
-      limit: 5,
-    }),
-    practiceRepository.getRecentAttempts({
-      childId: session.childUserId,
-      limit: 10,
-    }),
+    (async () => {
+      const t0 = childTodayProfileNow();
+      const p = await practiceRepository.getTodayPractice({
+        childId: session.childUserId,
+        now: new Date(),
+        limit: 5,
+      });
+      childTodayProfileLog("getTodayPractice", childTodayProfileNow() - t0);
+      return p;
+    })(),
+    (async () => {
+      const t0 = childTodayProfileNow();
+      const a = await practiceRepository.getRecentAttempts({
+        childId: session.childUserId,
+        limit: 10,
+      });
+      childTodayProfileLog("getRecentAttempts", childTodayProfileNow() - t0);
+      return a;
+    })(),
   ]);
+
+  childTodayProfileLog("page_handler_total_ms", childTodayProfileNow() - pageT0);
 
   return (
     <AppShell title="今日练习" subtitle="Today" navItems={childNav}>

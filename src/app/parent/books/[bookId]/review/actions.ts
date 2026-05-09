@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { KnowledgeItemType } from "@/domain/enums";
 import { getBookIngestionRepository } from "@/lib/book-ingestion/repository";
+import { CONFIRMED_PRACTICE_SYNC_TAG } from "@/lib/practice/sync-confirmed-practice";
 
 export async function confirmBookPageAction(formData: FormData): Promise<void> {
   const bookId = String(formData.get("bookId") ?? "");
@@ -28,6 +29,7 @@ export async function confirmBookPageAction(formData: FormData): Promise<void> {
 
   revalidatePath(`/parent/books/${bookId}/review`);
   revalidatePath("/child/today");
+  revalidateTag(CONFIRMED_PRACTICE_SYNC_TAG);
 }
 
 function parseKnowledgeItemType(value: string | undefined): KnowledgeItemType.Word | KnowledgeItemType.Phrase {
