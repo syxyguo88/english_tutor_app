@@ -51,7 +51,7 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P0** checklist items live in **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`** (section **“P0 checklist — ship-quality verification”**). After P0: **P1** CI (including optional **`npm run test:e2e`** with `DATABASE_URL` + seed, and optional integration tests behind env — see that plan’s P1.2 / P1.3).
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** verification (handoff section **“P0 checklist — ship-quality verification”**) is complete; **next:** **P1** CI (including optional **`npm run test:e2e`** with `DATABASE_URL` + seed, and optional integration tests behind env — see that plan’s P1.2 / P1.3).
 
 UX polish backlog (non-blocking): empty states, dashboard placeholders (**待复核 AI 判断**), streak/global metrics.
 
