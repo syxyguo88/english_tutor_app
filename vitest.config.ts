@@ -8,7 +8,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: [fileURLToPath(new URL("./vitest.setup.ts", import.meta.url))],
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "src/**/*.integration.test.ts",
+    ],
   },
   resolve: {
     alias: {

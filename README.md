@@ -26,7 +26,20 @@ Handoffs and CI should use **`npx prisma migrate deploy`** against the target da
 
 GitHub Actions CI lives in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). It runs unit checks and Chromium e2e on pushes and pull requests targeting `main` or `mvp-foundation`, each against a PostgreSQL 16 service that matches `docker-compose.yml`.
 
-`RUN_INTEGRATION=1` is reserved for future opt-in Prisma integration tests; no integration test suite is wired to that flag yet.
+## Opt-in Prisma integration tests
+
+Vitest runs **unit tests only** by default (`npm run test`). Prisma integration tests live in files named `*.integration.test.ts` and run only when:
+
+```bash
+RUN_INTEGRATION=1 npm run test
+```
+
+Vitest does not load `.env` by itself; ensure **`DATABASE_URL`** (or **`INTEGRATION_DATABASE_URL`**) is exported in the shell—for example `set -a && . ./.env && set +a` before the command if you keep credentials in **`.env`**.
+
+- **`INTEGRATION_DATABASE_URL`** is used when set; otherwise tests use **`DATABASE_URL`**.
+- The database must exist, be **migrated** (`npx prisma migrate deploy` or `npm run db:migrate`), and **seeded** if a test depends on seed data (e.g. the prototype family in `prisma/seed.ts`).
+
+Set `RUN_INTEGRATION=1` only when Postgres is up and configured; default CI does not set this flag, so the standard unit job does not need an integration database.
 
 ## Local database
 
