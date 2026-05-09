@@ -1,6 +1,6 @@
 # English Tutor App Current Status
 
-Updated: 2026-05-10
+Updated: 2026-05-09
 
 ## Start Here
 
@@ -83,4 +83,4 @@ Set **`PROFILE_CHILD_TODAY=1`** with dev server to log **`[profile:child-today]`
 
 ## One-Line Handoff
 
-Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app`: book ingestion and practice are **Prisma-backed** (commits through **`6afbc4b`**); local Postgres via compose + migrate + seed; child/parent UX polish partially done. Next: follow **`docs/superpowers/plans/2026-05-10-next-development.md`** (e2e/CI, UX polish, optional deeper perf/infra).
+Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app` (**tip:** run `git log -1`): Prisma book + practice, CI (**`.github/workflows/ci.yml`**), P2 UX（含 **`/parent/books`**、**`/child/today`** 练习总览 P2.3）。下一步：**`docs/superpowers/plans/2026-05-10-next-development.md`**（P3 / 可选 P1.3）。必读交接：**`docs/superpowers/handoffs/2026-05-06-project-handoff.md`**「Latest Handoff Update」。计划内多文件改动：**SDD**（`.cursor/rules/default-subagent-driven-development.mdc`）；Git SSH 代理问题：**`.cursor/rules/git-ssh-proxy-bypass.mdc`**。

@@ -1,6 +1,7 @@
 # English Tutor App Project Handoff
 
-Date: 2026-05-06
+Date: 2026-05-06  
+**Last handoff refresh:** 2026-05-09（对接下一任 agent：请读本节「Latest Handoff Update」与 `current-status.md`）
 
 ## Start Here For New Agents
 
@@ -10,7 +11,7 @@ For a short current-state entry point, read:
 docs/superpowers/current-status.md
 ```
 
-Prioritized next steps (verification → CI → UX):
+Prioritized backlog（**P0–P2 已在仓库完成**；下一步见 **`2026-05-10-next-development.md`** 的 **P3 / P1.3**）：
 
 ```text
 docs/superpowers/plans/2026-05-10-next-development.md
@@ -54,27 +55,28 @@ Use this full handoff as the historical record when deeper context is needed.
 
 ## Latest Handoff Update
 
-Updated: 2026-05-10 (P0 checklist for next agent)
+**Updated: 2026-05-09** — 对接**新开 agent**：请先读 `docs/superpowers/current-status.md`，再读本文件的「Agent workflow」与「Recommended next tasks」。
 
 ### Branch and tip commit
 
 - **Path:** `/Users/darren/code/build_ai/english_tutor_app`
-- **Branch:** `mvp-foundation`
-- **Recent commits (newest first — use `git log` for truth):**
-  - `6afbc4b` — feat(practice): persist exercises, attempts, mastery via Prisma (**Phase C**)
-  - `b391f1d` — feat(book-ingestion): persist books and pages with Prisma (**Phase B**)
-  - `1a4215d` — chore(db): Postgres compose, initial migration, Prisma seed (**Phase A**)
-  - `667d34c` — feat(child): recent attempt history on `/child/today`
-  - `4d93996` — feat(parent): low mastery metric from practice repository
-  - `c28276e` — chore(rules): mandatory **subagent-driven development** (`.cursor/rules/default-subagent-driven-development.mdc`)
-  - `b441169` — feat(child): practice stepper (one exercise at a time, server action passed from server component)
+- **Branch:** **`mvp-foundation`**
+- **Tip commit（请以 `git log -1` 为准）：** **`178b762`** — `feat(practice): P2.3 streak + totals overview on child today`
+- **Remote sync:** 本地分支当时曾 **ahead of `origin/mvp-foundation` 若干 commit**；接手后请先 **`git fetch`** / **`git status`**，必要时 **`git push`**（若在受限网络下 SSH 失败，仓库规则 **`.cursor/rules/git-ssh-proxy-bypass.mdc`**：GitHub 使用 **`ssh.github.com:443`**）。
 
-Working tree at this edit: commit documentation updates as needed.
+### 已完成范围摘要（不必重做）
+
+| 轨道 | 状态 |
+|------|------|
+| **P0** | README 本地 DB/e2e 路径、e2e/build 抽查、Phase D 文档对齐 — **已完成**（见本文件上方 checklist `[x]`）。 |
+| **P1** | **`.github/workflows/ci.yml`**：`unit`（migrate + typecheck + lint + vitest）+ **`e2e`**（seed + Playwright Chromium **`--with-deps`**）；曾因 **`NO_PROXY`/`no_proxy` 重复键**导致 workflow 无效，已修复为仅 **`NO_PROXY`**。 |
+| **P2** | **P2.1** 空状态、**P2.2**「待复核 AI 判断」占位、**P2.3** 孩子端练习总览（**`getChildPracticeOverview`** / **`practice-calendar`**）、家长 **`/parent/books`** 列表（**`listBooksForFamily`**）。P2.3 规格：`docs/superpowers/specs/2026-05-09-p2.3-practice-overview-streak.zh.md`。 |
 
 ### Agent workflow (mandatory for plan/handoff work)
 
-- Read **once:** `docs/superpowers/current-status.md` and the relevant section of `docs/superpowers/plans/2026-05-08-prisma-persistence.md`.
-- Follow **`.cursor/rules/default-subagent-driven-development.mdc`**: coordinator dispatches **Task/subagents** per task; **spec review then code review**; coordinator does **not** implement application code for those tasks.
+- Read **once:** `docs/superpowers/current-status.md`；若动持久化再瞄 **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** Phase D 脚注。
+- Follow **`.cursor/rules/default-subagent-driven-development.mdc`**：**协调员只派 subagent 做多文件实现**，不要协调员自己写业务代码；每任务 **spec review → code review**。（此前有个别会话未严格遵守 SDD，**后续务必恢复**。）
+- Git：`git-ssh-proxy-bypass.mdc`（GitHub SSH 走 **443** 绕过本地代理）。
 
 ### What runs on Postgres vs in-memory
 
@@ -95,9 +97,10 @@ Shared constants (avoid circular imports): `src/lib/practice/constants.ts` (`LOW
 ### UX notes (child / parent)
 
 - **`PROFILE_CHILD_TODAY` (perf):** Set **`PROFILE_CHILD_TODAY=1`** in dev to log **`[profile:child-today]`** for `/child/today`. **`getTodayPractice`** uses a **two-phase `Exercise` read** (light `select` for eligibility scan, then full rows by id for the few shown) because profiling showed one full `findMany` over ~120 rows was **~3s** due to large **`prompt` / `expectedAnswer` JSON**. See README subsection “`PROFILE_CHILD_TODAY`” and `src/lib/practice/prisma-practice-repository.ts`.
-- **`/child/today`:** `PracticeStepper` client component; **`submitPracticeAttemptAction`** passed as a prop from the server page (avoids `UnrecognizedActionError` after HMR).
+- **`/child/today`:** `PracticeStepper` client component; **`submitPracticeAttemptAction`** passed as a prop from the server page (avoids `UnrecognizedActionError` after HMR). **P2.3:** 顶部「我的练习」卡片 — **`getChildPracticeOverview`**（连续打卡天、今日/累计作答）；打卡按运行环境**本地日历日**（CI 多为 UTC，与开发者本机可能差一日，属原型已知差异）。
 - **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` must stay in a **non-**`"use client"` module (do not call client-module helpers from RSC).
-- **Parent dashboard:** “低掌握度知识点” uses `countLowMasteryKnowledge` for the prototype child.
+- **Parent dashboard:** “低掌握度知识点” uses `countLowMasteryKnowledge` for the prototype child；「待复核 AI 判断」为原型占位（计划 P2.2）。
+- **Parent `/parent/books`:** 绘本列表 **`listBooksForFamily`**；导航「绘本」→ 列表，「上传」→ **`/parent/books/new`**。
 
 ### Product boundaries (unchanged intent)
 
@@ -109,10 +112,12 @@ Still a **family prototype**: deterministic practice/OCR mock, no real AI gradin
 npm run prisma:generate
 npm run typecheck   # pass
 npm run lint        # pass
-npm run test        # 9 files, 41 tests pass (in-memory repository tests only)
+npm run test        # 10 files, 50 tests pass (Vitest)
 ```
 
-Re-run **`npm run test:e2e`** with Postgres up and **`npm run dev`** after persistence changes. CI may need **`DATABASE_URL`** or a test DB service.
+**CI:** `.github/workflows/ci.yml` — `push`/`pull_request` 至 **`main`** / **`mvp-foundation`**；合并前在 GitHub Actions 确认 **Unit** + **E2E** 均绿。
+
+After major persistence or UX changes: re-run **`npm run test:e2e`**（Postgres + seed；端口占用时用 **`E2E_PORT=`**）。
 
 ### Known caveats
 
@@ -120,17 +125,18 @@ Re-run **`npm run test:e2e`** with Postgres up and **`npm run dev`** after persi
 - **Next.js:** `Cannot find module './NNN.js'` or stale Server Actions — delete **`.next`** and restart dev server.
 - **Prisma Studio:** requires **`DATABASE_URL`** in environment (`.env` at project root).
 - **Exercise `createdOrder`:** concurrent `ensure*` could theoretically collide under extreme parallelism (acceptable for prototype).
+- **P2.3 streak:** Prisma 路径对 streak 会拉取该孩子全部 **`Attempt.createdAt`** 再聚日（原型可接受）；数据极大时可改为 SQL `DATE` 聚合（见 **`2026-05-10-next-development.md`** P3）。
 
 ### Recommended next tasks
 
-1. **P0 checklist** (this document, section **“P0 checklist — ship-quality verification”**): e2e path, build/start spot-check, persistence plan Phase D hygiene — then proceed to **`docs/superpowers/plans/2026-05-10-next-development.md`** P1 (CI).
-2. **UX polish (P2):** empty states; dashboard card **待复核 AI 判断** still placeholder `0`.
-3. **Real ingestion / infra** (later): object storage, OCR provider, audio pipeline.
+1. **Primary:** **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P3** 技术债（图片/Payload、Prisma 7、`getRecentAttempts` 瘦身等）按需排期；可选 **P1.3** `RUN_INTEGRATION=1` 集成测试骨架。
+2. **Process:** 计划内多文件任务 **必须用 SDD**（`.cursor/rules/default-subagent-driven-development.mdc`），协调员 **禁止**亲自实现业务代码。
+3. **Product（更长线）：** 真实 OCR/存储/音频 — 见设计总 spec。
 
 ### One-Line Handoff
 
 ```text
-Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. Read docs/superpowers/current-status.md and docs/superpowers/handoffs/2026-05-06-project-handoff.md — complete the P0 checklist (e2e, build/start spot-check, Phase D doc hygiene), then docs/superpowers/plans/2026-05-10-next-development.md. Follow .cursor/rules/default-subagent-driven-development.mdc for plan work.
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip 178b762 — verify with git log). Read docs/superpowers/current-status.md and this handoff “Latest Handoff Update”. P0–P2 are done; follow docs/superpowers/plans/2026-05-10-next-development.md for P3 / optional P1.3. Mandatory: subagent-driven development for multi-file plan work; use .cursor/rules/git-ssh-proxy-bypass.mdc if git push over SSH fails behind local proxy.
 ```
 
 ## Repository
