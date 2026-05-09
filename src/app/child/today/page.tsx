@@ -98,7 +98,7 @@ function PracticeContent({
 
       {practice.latestAttempt ? <AttemptFeedback practice={practice} /> : null}
 
-      {recentAttempts.length > 0 ? <RecentAttempts attempts={recentAttempts} /> : null}
+      <RecentAttempts attempts={recentAttempts} />
 
       {practice.exercises.length > 0 ? (
         <PracticeStepper
@@ -136,18 +136,22 @@ function RecentAttempts({ attempts }: { attempts: PracticeAttemptSummary[] }) {
   return (
     <section style={cardStyle} aria-label="最近作答">
       <h3 style={{ margin: "0 0 12px", fontSize: 22 }}>最近作答</h3>
-      <ul style={{ margin: 0, paddingLeft: 18, color: "#475569", display: "grid", gap: 8 }}>
-        {attempts.map((attempt) => (
-          <li key={attempt.id} style={{ lineHeight: 1.45 }}>
-            <span style={{ fontWeight: 600, color: attempt.isCorrect ? "#15803d" : "#b91c1c" }}>
-              {attempt.isCorrect ? "对" : "错"}
-            </span>
-            <span style={{ marginLeft: 8 }}>
-              [{EXERCISE_TYPE_LABEL[attempt.exerciseType]}] {truncateAnswerText(attempt.answerText, 40)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {attempts.length === 0 ? (
+        <p style={{ margin: 0, color: "#475569" }}>还没有记录，完成一题后会显示在这里。</p>
+      ) : (
+        <ul style={{ margin: 0, paddingLeft: 18, color: "#475569", display: "grid", gap: 8 }}>
+          {attempts.map((attempt) => (
+            <li key={attempt.id} style={{ lineHeight: 1.45 }}>
+              <span style={{ fontWeight: 600, color: attempt.isCorrect ? "#15803d" : "#b91c1c" }}>
+                {attempt.isCorrect ? "对" : "错"}
+              </span>
+              <span style={{ marginLeft: 8 }}>
+                [{EXERCISE_TYPE_LABEL[attempt.exerciseType]}] {truncateAnswerText(attempt.answerText, 40)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

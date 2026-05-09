@@ -48,11 +48,30 @@ export default async function BookReviewPageRoute({ params }: ReviewPageProps) {
         </p>
       </section>
 
-      <div style={{ display: "grid", gap: 18 }}>
-        {book.pages.map((page) => (
-          <PageReviewCard key={page.id} bookId={book.id} page={page} />
-        ))}
-      </div>
+      {book.pages.length === 0 ? (
+        <section
+          style={{
+            border: "1px solid #dbe3ef",
+            borderRadius: 8,
+            background: "white",
+            padding: 20,
+          }}
+          aria-live="polite"
+        >
+          <p style={{ margin: "0 0 12px", color: "#475569" }}>
+            暂无页面数据。请返回上传步骤添加页面，或稍后刷新。
+          </p>
+          <Link href="/parent/books/new" style={linkStyle}>
+            返回上传新绘本
+          </Link>
+        </section>
+      ) : (
+        <div style={{ display: "grid", gap: 18 }}>
+          {book.pages.map((page) => (
+            <PageReviewCard key={page.id} bookId={book.id} page={page} />
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }
