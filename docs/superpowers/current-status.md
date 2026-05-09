@@ -37,8 +37,9 @@ Completed **prototype** capabilities include:
 3. Practice generation + grading → **PostgreSQL** via **`src/lib/practice/prisma-practice-repository.ts`** (`getPracticeRepository()`).
 4. Child UX: one exercise at a time (`practice-stepper.tsx`), recent attempts list, Server Actions passed from server components where needed.
 5. Parent dashboard: **低掌握度知识点** from practice DB (prototype child).
-6. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).
-7. Larger photo uploads (`next.config.ts` body limit **25mb**).
+6. Parent **绘本列表** **`/parent/books`** (`listBooksForFamily`) — upload → 列表 → 校对闭环。
+7. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).
+8. Larger photo uploads (`next.config.ts` body limit **25mb**).
 
 **Still not production-grade:** real OCR/AI, object storage for images, real speech, production auth, CI always-on Postgres.
 
@@ -61,7 +62,7 @@ UX polish backlog (non-blocking): **P2.3** streak/global metrics if prioritized.
 npm run prisma:generate
 npm run typecheck  → pass
 npm run lint       → pass
-npm run test       → 9 files, 41 tests passed
+npm run test       → 9 files, 43 tests passed
 ```
 
 Re-run **`npm run test:e2e`** after major persistence changes.

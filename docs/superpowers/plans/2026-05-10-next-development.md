@@ -55,6 +55,8 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 
 **P2 progress (2026-05-09):** **P2.1** shipped — empty states for「最近作答」、家长总览无待校对时的上传引导、绘本校对页零页面提示。**P2.2** shipped —「待复核 AI 判断」改为占位 **—** + 脚注说明原型未接入 AI 复核队列，并指向本文件。**P2.3** remains optional until prioritized.
 
+**Also shipped:** Parent **`/parent/books`** index + **`listBooksForFamily`** (绘本列表 → 校对)，导航「绘本」指向列表；上传仍为 **`/parent/books/new`**。
+
 ---
 
 ## P3 — Technical debt (schedule when needed)
