@@ -35,10 +35,10 @@ Use this full handoff as the historical record when deeper context is needed.
 
 ### P0.2 — Production-like timing spot-check
 
-- [ ] **`npm run build`** succeeds with no errors.
-- [ ] **`npm run start`** (production server on port 3000 or note alternate port).
-- [ ] After warm-up, hit **`/parent/dashboard`** and **`/child/today`**; record rough latency vs same routes on **`npm run dev`** (one-line notes OK).
-- [ ] Optional: add a **Verification snapshot** line to **`docs/superpowers/current-status.md`** (build/start timing or “spot-check 2026-__-__”).
+- [x] **`npm run build`** succeeds with no errors.
+- [x] **`npm run start`** (production server on port 3000 or note alternate port).
+- [x] After warm-up, hit **`/parent/dashboard`** and **`/child/today`**; record rough latency vs same routes on **`npm run dev`** (one-line notes OK).
+- [x] Optional: add a **Verification snapshot** line to **`docs/superpowers/current-status.md`** (build/start timing or “spot-check 2026-__-__”).
 
 **Done when:** You have a subjective sense that prod mode is acceptable; optional snapshot committed.
 

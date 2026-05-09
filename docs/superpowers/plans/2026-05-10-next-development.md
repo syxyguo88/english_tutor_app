@@ -22,9 +22,9 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 
 ### P0.2 — Production-like timing spot-check
 
-- [ ] **`npm run build`** succeeds.
-- [ ] **`npm run start`**; warm **`/parent/dashboard`** and **`/child/today`**; note rough latency vs **`npm run dev`**.
-- [ ] Optional: append one line to **`docs/superpowers/current-status.md`** verification snapshot.
+- [x] **`npm run build`** succeeds.
+- [x] **`npm run start`**; warm **`/parent/dashboard`** and **`/child/today`**; note rough latency vs **`npm run dev`**.
+- [x] Optional: append one line to **`docs/superpowers/current-status.md`** verification snapshot.
 
 ### P0.3 — Persistence plan doc hygiene
 

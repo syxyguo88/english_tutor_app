@@ -1,6 +1,6 @@
 # English Tutor App Current Status
 
-Updated: 2026-05-09
+Updated: 2026-05-10
 
 ## Start Here
 
@@ -51,11 +51,9 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-From **`2026-05-08-prisma-persistence.md`** — **Phase D** and follow-ups:
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`** (P0 verification → P1 CI → P2 UX → P3 tech debt). **Actionable P0 checkboxes:** **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`** → section **“P0 checklist — ship-quality verification”**.
 
-- Remove obsolete in-memory singleton globals if any remain; document CI/test strategy (`DATABASE_URL` for e2e).
-- Run **`npm run test:e2e`** against a running DB + dev server.
-- Optional: README/db troubleshooting (Docker Hub mirrors), integration tests behind env.
+Still relevant from **`2026-05-08-prisma-persistence.md`** (Phase D / follow-ups): confirm plan checkboxes vs repo; **`npm run test:e2e`** with DB + seed; optional integration tests behind env.
 
 UX polish backlog (non-blocking): empty states, dashboard placeholders (**待复核 AI 判断**), streak/global metrics.
 
@@ -70,6 +68,12 @@ npm run test       → 9 files, 41 tests passed
 
 Re-run **`npm run test:e2e`** after major persistence changes.
 
+**Prod spot-check (2026-05-09):** `npm run build` exit 0; `PORT=3010 npm run start` (3000 busy). After warm-up, `curl` `time_total` ~0.10–0.21s `/parent/dashboard`, ~0.10–0.21s `/child/today`; dev on 3020 similar (~0.10–0.11s) — acceptable for prototype.
+
+## `PROFILE_CHILD_TODAY`（孩子端性能对照）
+
+Set **`PROFILE_CHILD_TODAY=1`** with dev server to log **`[profile:child-today]`** timings for `/child/today`. Profiling found **`getTodayPractice`** was dominated by loading **full `Exercise` rows** (~120 rows, huge JSON). Fix: **two-phase query** — light `select` over the scan window, then full rows **`where: { id: { in: chosenIds } }`** for only the exercises shown (see README “`PROFILE_CHILD_TODAY`” and `prisma-practice-repository.ts`).
+
 ## Known Caveats
 
 - Images remain **data URLs or URLs stored as strings** — large payloads in Postgres; not CDN/object storage.
@@ -78,4 +82,4 @@ Re-run **`npm run test:e2e`** after major persistence changes.
 
 ## One-Line Handoff
 
-Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app`: book ingestion and practice are **Prisma-backed** (commits through **`6afbc4b`**); local Postgres via compose + migrate + seed; child/parent UX polish partially done. Next: **Phase D** in the prisma persistence plan + **e2e/CI** hardening.
+Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app`: book ingestion and practice are **Prisma-backed** (commits through **`6afbc4b`**); local Postgres via compose + migrate + seed; child/parent UX polish partially done. Next: follow **`docs/superpowers/plans/2026-05-10-next-development.md`** (e2e/CI, UX polish, optional deeper perf/infra).
