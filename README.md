@@ -22,6 +22,12 @@ npm run test:e2e             # if port 3000 (or your chosen `E2E_PORT`) is busy,
 
 Handoffs and CI should use **`npx prisma migrate deploy`** against the target database. In daily development you may prefer **`npm run db:migrate`** (`prisma migrate dev`) when creating or adjusting migrations.
 
+## CI
+
+GitHub Actions CI lives in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). It runs unit checks and Chromium e2e on pushes and pull requests targeting `main` or `mvp-foundation`, each against a PostgreSQL 16 service that matches `docker-compose.yml`.
+
+`RUN_INTEGRATION=1` is reserved for future opt-in Prisma integration tests; no integration test suite is wired to that flag yet.
+
 ## Local database
 
 The app uses PostgreSQL via Prisma. Bring up a local database and seed it before running the dev server, tests, or e2e:

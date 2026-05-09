@@ -41,6 +41,8 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 | P1.2 | **Optional: e2e job** | Same pipeline + `npm run playwright:install --with-deps` (or cache browsers) + `npm run test:e2e` with `DATABASE_URL` and seeded DB. | Job green or explicitly `continue-on-error` with ticket link. |
 | P1.3 | **Integration tests (optional)** | Opt-in Prisma tests behind `RUN_INTEGRATION=1` + test DB URL; document in README. | `RUN_INTEGRATION=1 npm run test` passes when DB available. |
 
+**P1 progress (2026-05-10):** P1.1 and P1.2 are implemented in-repo via `.github/workflows/ci.yml` with separate `unit` and Chromium `e2e` jobs against PostgreSQL 16. P1.3 is documented in README as a future `RUN_INTEGRATION=1` opt-in; no integration tests exist yet.
+
 ---
 
 ## P2 — Product / UX (prototype polish)

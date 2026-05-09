@@ -51,7 +51,7 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** verification (handoff section **“P0 checklist — ship-quality verification”**) is complete; **next:** **P1** CI (including optional **`npm run test:e2e`** with `DATABASE_URL` + seed, and optional integration tests behind env — see that plan’s P1.2 / P1.3).
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** verification (handoff section **“P0 checklist — ship-quality verification”**) is complete; **P1** CI workflow is now in-repo; validate on push/PR, then continue with **P2** UX polish.
 
 UX polish backlog (non-blocking): empty states, dashboard placeholders (**待复核 AI 判断**), streak/global metrics.
 
@@ -65,6 +65,8 @@ npm run test       → 9 files, 41 tests passed
 ```
 
 Re-run **`npm run test:e2e`** after major persistence changes.
+
+- **CI (2026-05-10):** `.github/workflows/ci.yml` added with unit + Chromium e2e jobs against PostgreSQL 16; validate green status on push/PR.
 
 **Prod spot-check (2026-05-09):** `npm run build` exit 0; `PORT=3010 npm run start` (3000 busy). After warm-up, `curl` `time_total` ~0.10–0.21s `/parent/dashboard`, ~0.10–0.21s `/child/today`; dev on 3020 similar (~0.10–0.11s) — acceptable for prototype.
 
