@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { KnowledgeItemType } from "@/domain/enums";
+import { describe, expect, it, vi } from "vitest";
+import { BookStatus, KnowledgeItemType } from "@/domain/enums";
 import { createInMemoryBookIngestionRepository } from "./repository";
 
 describe("book ingestion repository", () => {
@@ -207,5 +207,106 @@ describe("book ingestion repository", () => {
         ],
       },
     ]);
+  });
+
+  it("lists books for the family with pageCount and title after create", async () => {
+    const repository = createInMemoryBookIngestionRepository();
+    const draft = await repository.createBookDraft({
+      familyId: "family_list",
+      title: "Listed Book",
+      pages: [
+        {
+          pageOrder: 1,
+          originalImageUrl: "data:image/png;base64,p1",
+          ocrDraft: {
+            sourceFileName: "p.png",
+            sentences: [{ text: "Hello." }],
+            knowledgeCandidates: [],
+          },
+        },
+        {
+          pageOrder: 2,
+          originalImageUrl: "data:image/png;base64,p2",
+          ocrDraft: {
+            sourceFileName: "p2.png",
+            sentences: [{ text: "World." }],
+            knowledgeCandidates: [],
+          },
+        },
+      ],
+    });
+
+    await expect(repository.listBooksForFamily("family_list")).resolves.toEqual([
+      expect.objectContaining({
+        id: draft.bookId,
+        title: "Listed Book",
+        status: BookStatus.Draft,
+        pageCount: 2,
+        readingDate: null,
+        updatedAt: expect.any(Date),
+      }),
+    ]);
+
+    await expect(repository.listBooksForFamily("other_family")).resolves.toEqual([]);
+  });
+
+  it("orders family books by updatedAt descending, including after confirmPage", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-09T10:00:00.000Z"));
+
+    const repository = createInMemoryBookIngestionRepository();
+    const first = await repository.createBookDraft({
+      familyId: "family_order",
+      title: "First Book",
+      pages: [
+        {
+          pageOrder: 1,
+          originalImageUrl: "data:image/png;base64,a",
+          ocrDraft: {
+            sourceFileName: "a.png",
+            sentences: [{ text: "One." }],
+            knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "one", variantKind: "base" }],
+          },
+        },
+      ],
+    });
+
+    vi.setSystemTime(new Date("2026-05-09T10:00:01.000Z"));
+    await repository.createBookDraft({
+      familyId: "family_order",
+      title: "Second Book",
+      pages: [
+        {
+          pageOrder: 1,
+          originalImageUrl: "data:image/png;base64,b",
+          ocrDraft: {
+            sourceFileName: "b.png",
+            sentences: [{ text: "Two." }],
+            knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "two", variantKind: "base" }],
+          },
+        },
+      ],
+    });
+
+    let titles = (await repository.listBooksForFamily("family_order")).map((b) => b.title);
+    expect(titles).toEqual(["Second Book", "First Book"]);
+
+    const firstBook = await repository.getBookForReview(first.bookId);
+    const firstPage = firstBook?.pages[0];
+    expect(firstPage).toBeDefined();
+
+    vi.setSystemTime(new Date("2026-05-09T10:00:02.000Z"));
+    await repository.confirmPage({
+      bookId: first.bookId,
+      pageId: firstPage?.id ?? "",
+      parentConfirmed: true,
+      sentenceDrafts: [{ text: "One." }],
+      knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "one" }],
+    });
+
+    titles = (await repository.listBooksForFamily("family_order")).map((b) => b.title);
+    expect(titles).toEqual(["First Book", "Second Book"]);
+
+    vi.useRealTimers();
   });
 });

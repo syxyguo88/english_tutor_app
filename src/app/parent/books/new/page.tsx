@@ -3,6 +3,7 @@ import { BookDraftForm } from "./book-draft-form";
 
 const parentNav = [
   { id: "overview", href: "/parent/dashboard", label: "总览" },
+  { id: "books", href: "/parent/books", label: "绘本" },
   { id: "new-book", href: "/parent/books/new", label: "上传绘本" },
 ] satisfies ReadonlyArray<AppShellNavItem>;
 

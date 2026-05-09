@@ -7,7 +7,7 @@ import { ensurePrototypeSession } from "@/lib/prototype-session";
 
 const parentNav = [
   { id: "overview", href: "/parent/dashboard", label: "总览" },
-  { id: "books", href: "/parent/books/new", label: "绘本" },
+  { id: "books", href: "/parent/books", label: "绘本" },
   { id: "review", href: "/parent/dashboard", label: "待校对" },
   { id: "knowledge", href: "/parent/dashboard", label: "知识画像" },
 ] satisfies ReadonlyArray<AppShellNavItem>;

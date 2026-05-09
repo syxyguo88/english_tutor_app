@@ -75,12 +75,22 @@ export type ParentDashboardMetrics = {
   pagesAwaitingReview: number;
 };
 
+export type FamilyBookSummary = {
+  id: string;
+  title: string;
+  status: BookStatus;
+  pageCount: number;
+  readingDate: string | null;
+  updatedAt: Date;
+};
+
 export type BookIngestionRepository = {
   createBookDraft(input: CreateBookDraftInput): Promise<CreateBookDraftResult>;
   getBookForReview(bookId: string): Promise<BookForReview | null>;
   confirmPage(input: ConfirmPageInput): Promise<void>;
   getConfirmedPracticeContent(): Promise<ConfirmedPracticeContent[]>;
   getParentDashboardMetrics(): Promise<ParentDashboardMetrics>;
+  listBooksForFamily(familyId: string): Promise<FamilyBookSummary[]>;
 };
 
 type StoredKnowledgeItem = {
@@ -96,6 +106,7 @@ type StoredKnowledgeVariant = NormalizedKnowledgeCandidate & {
 
 export function createInMemoryBookIngestionRepository(): BookIngestionRepository {
   const books = new Map<string, BookForReview>();
+  const bookUpdatedAt = new Map<string, Date>();
   const knowledgeItems = new Map<string, StoredKnowledgeItem>();
   const knowledgeVariants = new Map<string, StoredKnowledgeVariant>();
   let nextId = 1;
@@ -158,6 +169,7 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
       };
 
       books.set(bookId, book);
+      bookUpdatedAt.set(bookId, new Date());
       return { bookId };
     },
 
@@ -188,6 +200,8 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
         book.status = BookStatus.Confirmed;
         book.confirmedAt = new Date();
       }
+
+      bookUpdatedAt.set(input.bookId, new Date());
     },
 
     async getConfirmedPracticeContent() {
@@ -216,6 +230,20 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
           (page) => page.status !== BookPageStatus.Confirmed,
         ).length,
       };
+    },
+
+    async listBooksForFamily(familyId: string) {
+      return Array.from(books.values())
+        .filter((book) => book.familyId === familyId)
+        .map((book) => ({
+          id: book.id,
+          title: book.title,
+          status: book.status,
+          pageCount: book.pages.length,
+          readingDate: book.readingDate,
+          updatedAt: bookUpdatedAt.get(book.id) ?? new Date(0),
+        }))
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     },
   };
 }

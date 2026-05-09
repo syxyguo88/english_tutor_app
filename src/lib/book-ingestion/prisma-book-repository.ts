@@ -26,6 +26,7 @@ import type {
   CreateBookDraftInput,
   CreateBookDraftResult,
   ConfirmPageInput,
+  FamilyBookSummary,
   ParentDashboardMetrics,
 } from "./repository";
 
@@ -381,6 +382,25 @@ export function createPrismaBookIngestionRepository(
       ]);
 
       return { draftBooks, pagesAwaitingReview };
+    },
+
+    async listBooksForFamily(familyId: string): Promise<FamilyBookSummary[]> {
+      const rows = await db.book.findMany({
+        where: { familyId },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          _count: { select: { pages: true } },
+        },
+      });
+
+      return rows.map((book) => ({
+        id: book.id,
+        title: book.title,
+        status: mapBookStatus(book.status),
+        pageCount: book._count.pages,
+        readingDate: book.readingDate ? book.readingDate.toISOString().slice(0, 10) : null,
+        updatedAt: book.updatedAt,
+      }));
     },
   };
 }
