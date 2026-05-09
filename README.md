@@ -70,6 +70,20 @@ Notes:
 
 ### `PROFILE_CHILD_TODAY`（孩子端性能对照）
 
-Set **`PROFILE_CHILD_TODAY=1`** when running **`npm run dev`** (or `start`) to print **`[profile:child-today]`** timings for `/child/today` in the server console.
+Set **`PROFILE_CHILD_TODAY=1`** when running **`npm run dev`** (or `start`) to print **`[profile:child-today]`** timings for `/child/today` in the server console. This emits the standard phase lines (`childTodayProfileLog`), e.g. `phase=getTodayPractice_total durationMs=…`.
 
-**Why two-phase `Exercise` reads in `getTodayPractice`:** Profiling showed a single `findMany` for ~120 rows took **~3s** because each row carries large **`prompt` / `expectedAnswer` JSON** (e.g. long image URLs). The implementation now (1) **`select`** only light columns over the scan window to decide which exercises are “due”, then (2) **`findMany({ id: { in: … } })`** full rows for the small set actually shown (typically **≤ `limit`**). Compare **`getTodayPractice_exercise_scan_select`** vs **`getTodayPractice_exercise_full_by_ids`** in the logs. Instrumentation: `src/lib/profile/child-today-profile.ts`, `getTodayPractice` in `src/lib/practice/prisma-practice-repository.ts`.
+For verbose **structured JSON** lines (one JSON object per line after the prefix, e.g. `{"phase":"getTodayPractice_exercise_scan_select",…}`), additionally set **`PROFILE_CHILD_TODAY_JSON=1`**. The JSON helper (`childTodayProfileLogJson`) only emits when **both** env vars are set, so a default `PROFILE_CHILD_TODAY=1` run stays quiet enough to scan by eye:
+
+| Flags | Phase lines | Structured JSON lines |
+|-------|-------------|------------------------|
+| _(none)_ | off | off |
+| `PROFILE_CHILD_TODAY=1` | on | off |
+| `PROFILE_CHILD_TODAY=1 PROFILE_CHILD_TODAY_JSON=1` | on | on |
+| `PROFILE_CHILD_TODAY_JSON=1` only | off | off (requires base flag) |
+
+**Why two-phase `Exercise` reads in `getTodayPractice`:** Profiling showed a single `findMany` for ~120 rows took **~3s** because each row carries large **`prompt` / `expectedAnswer` JSON** (e.g. long image URLs). The implementation now (1) **`select`** only light columns over the scan window to decide which exercises are “due”, then (2) **`findMany({ id: { in: … } })`** full rows for the small set actually shown (typically **≤ `limit`**). Compare **`getTodayPractice_exercise_scan_select`** vs **`getTodayPractice_exercise_full_by_ids`** in the logs (both are JSON-only — set `PROFILE_CHILD_TODAY_JSON=1`). Instrumentation: `src/lib/profile/child-today-profile.ts`, `getTodayPractice` in `src/lib/practice/prisma-practice-repository.ts`.
+
+### Upload limits
+
+- **Per-page max:** **5 MiB** for any single book page image. Enforced in `createBookDraftAction` via **`MAX_BOOK_PAGE_IMAGE_BYTES`** in **`src/lib/book-ingestion/upload-limits.ts`** before files are converted to data URLs, so oversized uploads fail fast with a clear Chinese + English message instead of bloating Postgres.
+- **Whole-request max:** still bounded by Next's **`serverActions.bodySizeLimit`** in **`next.config.ts`** (currently **`25mb`**). Adjust both if the prototype needs to accept larger pages.

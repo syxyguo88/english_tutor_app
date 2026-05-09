@@ -196,7 +196,7 @@ function defaultMastery(
 }
 
 function attemptRowToSummary(
-  row: Attempt & { exercise: Exercise },
+  row: Attempt & { exercise: Pick<Exercise, "type"> },
 ): PracticeAttemptSummary {
   const exerciseType = toDomainExerciseType(row.exercise.type);
   const scoreNum = row.score ?? 0;
@@ -387,7 +387,7 @@ export function createPrismaPracticeRepository(
       >;
       let profile: ChildProfile | null;
       let attemptedGroups;
-      let latestAttemptRow: (Attempt & { exercise: Exercise }) | null;
+      let latestAttemptRow: (Attempt & { exercise: Pick<Exercise, "type"> }) | null;
 
       if (isChildTodayProfiling()) {
         const tBatchWall = childTodayProfileNow();
@@ -592,7 +592,7 @@ export function createPrismaPracticeRepository(
         where: { childUserId: input.childId },
         orderBy: { createdAt: "desc" },
         take: limit,
-        include: { exercise: true },
+        include: { exercise: { select: { type: true } } },
       });
 
       return rows.map(attemptRowToSummary);

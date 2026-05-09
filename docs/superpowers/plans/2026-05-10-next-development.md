@@ -68,6 +68,8 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 | P3.3 | **Profiling flags** | Keep `PROFILE_CHILD_TODAY`; optionally gate logs behind second env to reduce noise. |
 | P3.4 | **Prisma 7 / `prisma.config.ts`** | Address deprecation warning when upgrading. |
 
+**P3 progress (2026-05-09):** **P3.2** — `getRecentAttempts` uses `exercise: { select: { type: true } }`; `attemptRowToSummary` typed with `Pick<Exercise, "type">`. **P3.3** — `childTodayProfileLogJson` gated by `PROFILE_CHILD_TODAY_JSON=1` in addition to `PROFILE_CHILD_TODAY` (`isChildTodayProfileDetail`). **P3.1** — per-page upload cap `MAX_BOOK_PAGE_IMAGE_BYTES` (5 MiB) in book upload action + README **Upload limits**. **P3.4** — not upgraded in-repo yet (major-version bump; track release notes / `prisma.config.ts` when adopting Prisma 7).
+
 ---
 
 ## Explicit non-goals (this plan cycle)
