@@ -68,8 +68,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       E2E_PORT: "3000"
+      # Only NO_PROXY: GitHub Actions treats NO_PROXY and no_proxy as the same key (invalid workflow if both set).
       NO_PROXY: 127.0.0.1,localhost
-      no_proxy: 127.0.0.1,localhost
 
     services:
       postgres:
