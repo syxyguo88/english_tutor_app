@@ -35,7 +35,7 @@ Completed **prototype** capabilities include:
 1. MVP foundation (domain, Prisma schema, role shell).
 2. Book ingestion UI + mock OCR → **PostgreSQL** via **`src/lib/book-ingestion/prisma-book-repository.ts`** (`getBookIngestionRepository()`).
 3. Practice generation + grading → **PostgreSQL** via **`src/lib/practice/prisma-practice-repository.ts`** (`getPracticeRepository()`).
-4. Child UX: one exercise at a time (`practice-stepper.tsx`), recent attempts list, Server Actions passed from server components where needed.
+4. Child UX: one exercise at a time (`practice-stepper.tsx`), recent attempts list, **P2.3 练习总览**（连续打卡、今日/累计作答）on **`/child/today`**, Server Actions where needed.
 5. Parent dashboard: **低掌握度知识点** from practice DB (prototype child).
 6. Parent **绘本列表** **`/parent/books`** (`listBooksForFamily`) — upload → 列表 → 校对闭环。
 7. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).
@@ -52,9 +52,9 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** / **P1** complete in-repo; **P2.1** empty states and **P2.2** dashboard AI-review placeholder are implemented (see plan **P2 progress**). Next optional work: **P2.3** streak/metrics or **P3** tech debt.
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** / **P1** / **P2**（含 **P2.3** 练习总览，见 spec **`2026-05-09-p2.3-practice-overview-streak.zh.md`**）完成度见该计划。下一步可选 **P3** 技术债或产品深化。
 
-UX polish backlog (non-blocking): **P2.3** streak/global metrics if prioritized.
+UX polish：P2 核心条目标已覆盖；进一步游戏化可另开计划。
 
 ## Verification Snapshot (last recorded locally)
 
@@ -62,7 +62,7 @@ UX polish backlog (non-blocking): **P2.3** streak/global metrics if prioritized.
 npm run prisma:generate
 npm run typecheck  → pass
 npm run lint       → pass
-npm run test       → 9 files, 43 tests passed
+npm run test       → 10 files, 50 tests passed
 ```
 
 Re-run **`npm run test:e2e`** after major persistence changes.

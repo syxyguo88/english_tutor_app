@@ -27,6 +27,7 @@ import {
   type PracticeKnowledgeTarget,
 } from "@/domain/practice";
 import type {
+  ChildPracticeOverviewStats,
   ConfirmedPracticeSentence,
   CountLowMasteryKnowledgeInput,
   PracticeAttemptSummary,
@@ -46,6 +47,12 @@ import {
   RECENT_ATTEMPTS_BUFFER_SIZE,
   TODAY_PRACTICE_EXERCISE_SCAN_CAP,
 } from "./constants";
+import {
+  computeDailyPracticeStreak,
+  endOfLocalDay,
+  localDateKey,
+  startOfLocalDay,
+} from "./practice-calendar";
 
 type StoredPracticeExercise = PracticeExerciseDraft & {
   id: string;
@@ -589,6 +596,35 @@ export function createPrismaPracticeRepository(
       });
 
       return rows.map(attemptRowToSummary);
+    },
+
+    async getChildPracticeOverview(input: {
+      childId: string;
+      now: Date;
+    }): Promise<ChildPracticeOverviewStats> {
+      const start = startOfLocalDay(input.now);
+      const end = endOfLocalDay(input.now);
+
+      const [attemptsTotal, attemptsToday, dateRows] = await Promise.all([
+        db.attempt.count({ where: { childUserId: input.childId } }),
+        db.attempt.count({
+          where: {
+            childUserId: input.childId,
+            createdAt: { gte: start, lte: end },
+          },
+        }),
+        db.attempt.findMany({
+          where: { childUserId: input.childId },
+          select: { createdAt: true },
+        }),
+      ]);
+
+      const practiceDateKeys = new Set(
+        dateRows.map((r) => localDateKey(new Date(r.createdAt))),
+      );
+      const practiceStreakDays = computeDailyPracticeStreak(input.now, practiceDateKeys);
+
+      return { practiceStreakDays, attemptsToday, attemptsTotal };
     },
 
     async submitAttempt(input: SubmitPracticeAttemptInput) {

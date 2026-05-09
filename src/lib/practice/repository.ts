@@ -14,6 +14,7 @@ import {
 import { prisma } from "@/lib/db";
 import { LOW_MASTERY_SCORE_THRESHOLD, RECENT_ATTEMPTS_BUFFER_SIZE } from "./constants";
 import { createPrismaPracticeRepository } from "./prisma-practice-repository";
+import { computeDailyPracticeStreak, localDateKey } from "./practice-calendar";
 
 export type ConfirmedPracticeSentence = {
   bookId: string;
@@ -70,6 +71,19 @@ export type CountLowMasteryKnowledgeInput = {
   masteryScoreThreshold?: number;
 };
 
+/** Summary metrics for P2.3 child-facing streak / global counters (prototype). */
+export type ChildPracticeOverviewStats = {
+  /** Consecutive local calendar days with ≥1 attempt (see practice-calendar). */
+  practiceStreakDays: number;
+  attemptsToday: number;
+  attemptsTotal: number;
+};
+
+export type GetChildPracticeOverviewInput = {
+  childId: string;
+  now: Date;
+};
+
 export type PracticeRepository = {
   ensurePracticeExercisesFromConfirmedContent(
     sentences: ConfirmedPracticeSentence[],
@@ -95,6 +109,9 @@ export type PracticeRepository = {
     childId: string;
     limit?: number;
   }): Promise<PracticeAttemptSummary[]>;
+  getChildPracticeOverview(
+    input: GetChildPracticeOverviewInput,
+  ): Promise<ChildPracticeOverviewStats>;
 };
 
 type StoredPracticeExercise = PracticeExerciseDraft & {
@@ -131,6 +148,8 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
   const masteryStats = new Map<string, PracticeMasteryStat>();
   const reviewQueueItems: PracticeReviewQueueItem[] = [];
   const recentAttemptsByChild = new Map<string, PracticeAttemptSummary[]>();
+  /** All submit timestamps for streak / totals (in-memory tests + parity with Prisma Attempt). */
+  const allAttemptTimesByChild = new Map<string, Date[]>();
   const attemptedExerciseKeys = new Set<string>();
   let nextId = 1;
 
@@ -300,6 +319,16 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
       return list.slice(0, limit);
     },
 
+    async getChildPracticeOverview(input) {
+      const times = allAttemptTimesByChild.get(input.childId) ?? [];
+      const attemptsTotal = times.length;
+      const todayKey = localDateKey(input.now);
+      const attemptsToday = times.filter((t) => localDateKey(t) === todayKey).length;
+      const practiceDateKeys = new Set(times.map((t) => localDateKey(t)));
+      const practiceStreakDays = computeDailyPracticeStreak(input.now, practiceDateKeys);
+      return { practiceStreakDays, attemptsToday, attemptsTotal };
+    },
+
     async submitAttempt(input) {
       const exercise = exercises.get(input.exerciseId);
 
@@ -357,6 +386,10 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
         nextReviewAt,
       };
       pushRecentAttempt(input.childId, attempt);
+
+      const times = allAttemptTimesByChild.get(input.childId) ?? [];
+      times.push(new Date(input.now.getTime()));
+      allAttemptTimesByChild.set(input.childId, times);
 
       return {
         attempt,

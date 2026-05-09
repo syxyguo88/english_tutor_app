@@ -623,4 +623,69 @@ describe("practice repository", () => {
     expect(recent[0]?.id).toBe(attemptIds[attemptIds.length - 1]);
     expect(recent[RECENT_ATTEMPTS_BUFFER_SIZE - 1]?.id).toBe(attemptIds[1]);
   });
+
+  it("getChildPracticeOverview reflects streak and totals", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const practice = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date(2026, 4, 9, 10, 0, 0),
+      limit: 5,
+    });
+    const exerciseId = practice.exercises[0]?.id ?? "";
+
+    await expect(
+      repository.getChildPracticeOverview({
+        childId: "prototype-child",
+        now: new Date(2026, 4, 9, 11, 0, 0),
+      }),
+    ).resolves.toEqual({
+      practiceStreakDays: 0,
+      attemptsToday: 0,
+      attemptsTotal: 0,
+    });
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId,
+      answerText: "first",
+      now: new Date(2026, 4, 8, 9, 0, 0),
+    });
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId,
+      answerText: "second",
+      now: new Date(2026, 4, 9, 10, 0, 0),
+    });
+
+    await expect(
+      repository.getChildPracticeOverview({
+        childId: "prototype-child",
+        now: new Date(2026, 4, 9, 12, 0, 0),
+      }),
+    ).resolves.toMatchObject({
+      practiceStreakDays: 2,
+      attemptsToday: 1,
+      attemptsTotal: 2,
+    });
+  });
 });
