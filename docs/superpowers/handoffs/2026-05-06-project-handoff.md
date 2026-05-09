@@ -44,9 +44,9 @@ Use this full handoff as the historical record when deeper context is needed.
 
 ### P0.3 — Persistence plan doc hygiene (Phase D vs reality)
 
-- [ ] Open **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** — **Phase D** section.
-- [ ] For each Phase D bullet: set **`[x]`** if done, or add a **short footnote** under the section (“Remaining: …” / “Done in commit …”).
-- [ ] If Phase D is fully satisfied, trim **“Recommended Next Work”** in **`docs/superpowers/current-status.md`** so it does not still ask for Phase D as if outstanding (point at **`2026-05-10-next-development.md`** only).
+- [x] Open **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** — **Phase D** section.
+- [x] For each Phase D bullet: set **`[x]`** if done, or add a **short footnote** under the section (“Remaining: …” / “Done in commit …”).
+- [x] If Phase D is fully satisfied, trim **“Recommended Next Work”** in **`docs/superpowers/current-status.md`** so it does not still ask for Phase D as if outstanding (point at **`2026-05-10-next-development.md`** only).
 
 **Done when:** A new agent reading the persistence plan does not get a false “Phase D still open” signal.
 

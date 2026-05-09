@@ -1,7 +1,7 @@
 # Next development plan (post–Prisma prototype + child page perf)
 
 Updated: 2026-05-10  
-**Context:** Persistence Phases A–C are in place; Phase D items (singleton/version cleanup, README/e2e helpers, child `/child/today` **two-phase `Exercise` reads**, `PROFILE_CHILD_TODAY` profiling, `unstable_cache` for confirmed→exercise sync) are largely done. This plan picks up **verification, CI, product polish, and optional deeper work**.
+**Context:** Persistence Phases A–D are reflected in the repo (runtime **`get*Repository()`** uses Prisma; Phase D status is documented in **`2026-05-08-prisma-persistence.md`**). Child `/child/today` **two-phase `Exercise` reads**, `PROFILE_CHILD_TODAY` profiling, and `unstable_cache` for confirmed→exercise sync are in place. This plan picks up **verification, CI, product polish, and optional deeper work**.
 
 Use **`superpowers:subagent-driven-development`** when executing multi-file tasks from this plan unless the change is trivial.
 
@@ -28,8 +28,8 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 
 ### P0.3 — Persistence plan doc hygiene
 
-- [ ] **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** Phase D: **`[x]`** completed items or footnote “done / remaining”.
-- [ ] **`docs/superpowers/current-status.md`** “Recommended Next Work” does not falsely imply Phase D is still open.
+- [x] **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** Phase D: **`[x]`** completed items or footnote “done / remaining”.
+- [x] **`docs/superpowers/current-status.md`** “Recommended Next Work” does not falsely imply Phase D is still open.
 
 ---
 

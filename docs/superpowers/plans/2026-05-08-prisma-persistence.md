@@ -76,10 +76,14 @@
 
 ## Phase D — Cutover and cleanup
 
+> **Done (2026-05-10):** **`getPracticeRepository()`** and **`getBookIngestionRepository()`** use **`createPrismaPracticeRepository`** / **`createPrismaBookIngestionRepository`**; **`createInMemoryPracticeRepository`** / **`createInMemoryBookIngestionRepository`** remain **unit tests only**. **`PRACTICE_REPOSITORY_VERSION`** is mentioned **only in this plan** — it was **never shipped** in code (no repository version bump / reset mechanism).
+>
+> **Remaining:** None for prototype cutover. Routine **`npm run test`**, **`typecheck`**, **`lint`**, and **`test:e2e`** (Postgres + seed) expectations are tracked in **`docs/superpowers/current-status.md`** and **`docs/superpowers/plans/2026-05-10-next-development.md`** (P1 CI / optional integration tests).
+
 ### Task D1: Feature flag or single implementation
 
-- [ ] Remove or gate in-memory singletons; ensure `PRACTICE_REPOSITORY_VERSION`-style resets are obsolete or replaced by migrations.
-- [ ] Full `npm run test`, `npm run typecheck`, `npm run lint`, `npm run test:e2e` (may require DB in CI).
+- [x] **Singleton cutover:** App **`get*Repository()`** factories use Prisma implementations; in-memory **`createInMemory*`** remains tests only (no feature-flag dual path for prototype).
+- [x] **Verification:** Run **`npm run test`**, **`npm run typecheck`**, **`npm run lint`**, **`npm run test:e2e`** with Postgres when validating persistence or CI (see project verification docs; e2e optional job in P1).
 
 ---
 

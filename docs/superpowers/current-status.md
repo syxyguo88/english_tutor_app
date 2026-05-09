@@ -51,9 +51,7 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`** (P0 verification → P1 CI → P2 UX → P3 tech debt). **Actionable P0 checkboxes:** **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`** → section **“P0 checklist — ship-quality verification”**.
-
-Still relevant from **`2026-05-08-prisma-persistence.md`** (Phase D / follow-ups): confirm plan checkboxes vs repo; **`npm run test:e2e`** with DB + seed; optional integration tests behind env.
+Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P0** checklist items live in **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`** (section **“P0 checklist — ship-quality verification”**). After P0: **P1** CI (including optional **`npm run test:e2e`** with `DATABASE_URL` + seed, and optional integration tests behind env — see that plan’s P1.2 / P1.3).
 
 UX polish backlog (non-blocking): empty states, dashboard placeholders (**待复核 AI 判断**), streak/global metrics.
 
