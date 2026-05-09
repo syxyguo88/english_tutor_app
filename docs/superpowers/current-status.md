@@ -35,7 +35,7 @@ Completed **prototype** capabilities include:
 1. MVP foundation (domain, Prisma schema, role shell).
 2. Book ingestion UI + mock OCR → **PostgreSQL** via **`src/lib/book-ingestion/prisma-book-repository.ts`** (`getBookIngestionRepository()`).
 3. Practice generation + grading → **PostgreSQL** via **`src/lib/practice/prisma-practice-repository.ts`** (`getPracticeRepository()`).
-4. Child UX: one exercise at a time (`practice-stepper.tsx`), recent attempts list, **P2.3 练习总览**（连续打卡、今日/累计作答）on **`/child/today`**, Server Actions where needed.
+4. Child UX: practice stepper on **`/child/today`** — **答对后进入下一题**，最后一题答对后本轮完成；recent attempts list；**P2.3 练习总览**（连续打卡、今日/累计作答）；Server Actions + `router.refresh()` after submit. See **`docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`**.
 5. Parent dashboard: **低掌握度知识点** from practice DB (prototype child).
 6. Parent **绘本列表** **`/parent/books`** (`listBooksForFamily`) — upload → 列表 → 校对闭环。
 7. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).

@@ -62,6 +62,7 @@ Notes:
 - In dev, open the app with a **single host** for the session (prefer **`http://localhost:3000`**). Mixing `localhost` and `127.0.0.1` can break client navigation with a **TypeError: network error**; `next.config.ts` sets `allowedDevOrigins` to reduce that.
 - Prisma **SQL query logging** in development is off by default (faster navigation). Set **`PRISMA_LOG_QUERIES=1`** when you need verbose SQL in the terminal.
 - **`/child/today`** syncs confirmed sentences → `Exercise` rows behind a short-lived **Next `unstable_cache`** (tag `confirmed-practice-sync`). After you confirm a page in the parent review UI, that tag is revalidated so the child view picks up new exercises. Repeat visits to the child page stay much faster than the first load after a confirmation.
+- **Practice stepper:** submitting an answer calls a Server Action and **`router.refresh()`**. Wrong answers keep you on the same question; **after a correct answer** you advance to the next item (or see “本轮练习已完成” on the last one). Plan: `docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`.
 
 ### Troubleshooting
 

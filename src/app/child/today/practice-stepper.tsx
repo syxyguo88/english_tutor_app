@@ -2,7 +2,9 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ExerciseType } from "@/domain/enums";
 import type { PracticeExerciseDraft } from "@/domain/practice";
 import type { ClientPracticeExercise } from "./client-practice-exercise";
@@ -12,11 +14,14 @@ type ExercisePromptInput = PracticeExerciseDraft & { id: string; createdOrder: n
 export type PracticeStepperProps = {
   exercises: ClientPracticeExercise[];
   /** Bound on the server — avoids UnrecognizedActionError when importing actions inside `"use client"`. */
-  submitAttemptAction: (formData: FormData) => Promise<void>;
+  submitAttemptAction: (formData: FormData) => Promise<{ isCorrect: boolean }>;
 };
 
 export function PracticeStepper({ exercises, submitAttemptAction }: PracticeStepperProps) {
+  const router = useRouter();
   const [index, setIndex] = useState(0);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const total = exercises.length;
 
@@ -36,7 +41,60 @@ export function PracticeStepper({ exercises, submitAttemptAction }: PracticeStep
     return exercises[index] ?? exercises[0];
   }, [exercises, index, total]);
 
-  if (total === 0 || !current) {
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const formData = new FormData(form);
+      const atIndex = index;
+      setSubmitting(true);
+      try {
+        const result = await submitAttemptAction(formData);
+        await router.refresh();
+        if (!result.isCorrect) {
+          return;
+        }
+        if (atIndex >= total - 1) {
+          setSessionComplete(true);
+        } else {
+          setIndex(atIndex + 1);
+        }
+      } catch (err) {
+        console.error(err);
+        window.alert(err instanceof Error ? err.message : "提交失败");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [index, router, submitAttemptAction, total],
+  );
+
+  if (total === 0) {
+    return null;
+  }
+
+  if (sessionComplete) {
+    return (
+      <section style={completeSectionStyle} aria-label="本轮练习完成">
+        <h3 style={{ margin: "0 0 10px", fontSize: 22, color: "#1e293b" }}>本轮练习已完成</h3>
+        <p style={{ margin: "0 0 16px", color: "#475569", lineHeight: 1.5 }}>
+          你今天已经完成这一组题目。可以稍后再来，或再练一轮（从第一题开始浏览当日题目）。
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setSessionComplete(false);
+            setIndex(0);
+          }}
+          style={secondaryButtonStyle}
+        >
+          再练一次
+        </button>
+      </section>
+    );
+  }
+
+  if (!current) {
     return null;
   }
 
@@ -83,7 +141,7 @@ export function PracticeStepper({ exercises, submitAttemptAction }: PracticeStep
         {reviewLabel ? <span>{reviewLabel}</span> : null}
       </section>
 
-      <ExerciseCard exercise={current} submitAttemptAction={submitAttemptAction} />
+      <ExerciseCard exercise={current} onSubmit={handleSubmit} submitting={submitting} />
     </div>
   );
 }
@@ -107,10 +165,12 @@ function formatReviewHint(iso: string | null): string | null {
 
 function ExerciseCard({
   exercise,
-  submitAttemptAction,
+  onSubmit,
+  submitting,
 }: {
   exercise: ClientPracticeExercise;
-  submitAttemptAction: (formData: FormData) => Promise<void>;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  submitting: boolean;
 }) {
   const label = exerciseLabel(exercise.type);
 
@@ -118,7 +178,7 @@ function ExerciseCard({
     <section style={cardStyle} aria-label={`${label}练习`}>
       <p style={{ margin: "0 0 8px", color: "#64748b" }}>{label}</p>
       <ExercisePrompt exercise={toExercisePromptInput(exercise)} />
-      <form action={submitAttemptAction} style={{ display: "grid", gap: 12 }}>
+      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
         <input type="hidden" name="exerciseId" value={exercise.id} />
         <label style={{ display: "grid", gap: 6 }}>
           <span style={{ color: "#334155", fontWeight: 700 }}>{label}答案</span>
@@ -127,11 +187,12 @@ function ExerciseCard({
             required
             autoComplete="off"
             aria-label={`${label}答案`}
+            disabled={submitting}
             style={inputStyle}
           />
         </label>
-        <button type="submit" style={buttonStyle}>
-          提交{label}
+        <button type="submit" disabled={submitting} style={buttonStyle}>
+          {submitting ? "提交中…" : `提交${label}`}
         </button>
       </form>
     </section>
@@ -176,7 +237,25 @@ function ExercisePrompt({ exercise }: { exercise: ExercisePromptInput }) {
   }
 }
 
-const summaryStripStyle: React.CSSProperties = {
+const completeSectionStyle: CSSProperties = {
+  background: "linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)",
+  border: "1px solid #bbf7d0",
+  borderRadius: 8,
+  padding: 20,
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  background: "white",
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  color: "#334155",
+  cursor: "pointer",
+  fontWeight: 600,
+  minHeight: 40,
+  padding: "0 16px",
+};
+
+const summaryStripStyle: CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
   borderRadius: 8,
@@ -188,7 +267,7 @@ const summaryStripStyle: React.CSSProperties = {
   padding: "10px 14px",
 };
 
-const navButtonStyle: React.CSSProperties = {
+const navButtonStyle: CSSProperties = {
   background: "white",
   border: "1px solid #cbd5e1",
   borderRadius: 8,
@@ -199,21 +278,21 @@ const navButtonStyle: React.CSSProperties = {
   padding: "0 14px",
 };
 
-const cardStyle: React.CSSProperties = {
+const cardStyle: CSSProperties = {
   border: "1px solid #dbe3ef",
   borderRadius: 8,
   background: "white",
   padding: 20,
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   border: "1px solid #dbe3ef",
   borderRadius: 8,
   minHeight: 42,
   padding: "8px 10px",
 };
 
-const promptHeadingStyle: React.CSSProperties = {
+const promptHeadingStyle: CSSProperties = {
   margin: "0 0 14px",
   fontSize: 24,
 };
