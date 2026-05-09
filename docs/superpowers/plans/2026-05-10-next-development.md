@@ -53,6 +53,8 @@ Use **`superpowers:subagent-driven-development`** when executing multi-file task
 | P2.2 | **Dashboard “待复核 AI 判断”** | Replace hardcoded `0` with real metric or explicit “未实现”占位 + link to backlog. | Parent dashboard renders; copy accurate. |
 | P2.3 | **Streak / global metrics** | Only if prioritized: spec in design doc, then thin vertical slice. | Spec review + tests. |
 
+**P2 progress (2026-05-09):** **P2.1** shipped — empty states for「最近作答」、家长总览无待校对时的上传引导、绘本校对页零页面提示。**P2.2** shipped —「待复核 AI 判断」改为占位 **—** + 脚注说明原型未接入 AI 复核队列，并指向本文件。**P2.3** remains optional until prioritized.
+
 ---
 
 ## P3 — Technical debt (schedule when needed)
