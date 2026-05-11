@@ -326,9 +326,19 @@ const globalForBookIngestionRepository = globalThis as unknown as {
   bookIngestionRepository?: BookIngestionRepository;
 };
 
+function isFreshBookIngestionRepository(
+  candidate: BookIngestionRepository | undefined,
+): candidate is BookIngestionRepository {
+  return (
+    candidate != null &&
+    typeof candidate.listBooksWithReviewSentencesForFamily === "function" &&
+    typeof candidate.getBookSentenceReviewList === "function"
+  );
+}
+
 export function getBookIngestionRepository(): BookIngestionRepository {
-  // Restart the dev server after changing the repository implementation.
-  if (!globalForBookIngestionRepository.bookIngestionRepository) {
+  // Recreate when missing or stale after HMR (global cached an older object without new methods).
+  if (!isFreshBookIngestionRepository(globalForBookIngestionRepository.bookIngestionRepository)) {
     globalForBookIngestionRepository.bookIngestionRepository =
       createPrismaBookIngestionRepository(prisma);
   }
