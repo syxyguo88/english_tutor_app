@@ -309,4 +309,171 @@ describe("book ingestion repository", () => {
 
     vi.useRealTimers();
   });
+
+  describe("C6 book sentence review", () => {
+    it("lists only family books that have at least one confirmed-page reviewable sentence", async () => {
+      const repository = createInMemoryBookIngestionRepository();
+      const draft = await repository.createBookDraft({
+        familyId: "family_1",
+        title: "Reviewable Book",
+        pages: [
+          {
+            pageOrder: 1,
+            originalImageUrl: "data:image/png;base64,p1",
+            ocrDraft: {
+              sourceFileName: "p1.png",
+              sentences: [{ text: "Hello world." }],
+              knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "world", variantKind: "base" }],
+            },
+          },
+        ],
+      });
+
+      expect((await repository.listBooksWithReviewSentencesForFamily("family_1")).some((b) => b.id === draft.bookId)).toBe(
+        false,
+      );
+
+      const book = await repository.getBookForReview(draft.bookId);
+      const page = book?.pages[0];
+      await repository.confirmPage({
+        bookId: draft.bookId,
+        pageId: page?.id ?? "",
+        parentConfirmed: true,
+        sentenceDrafts: [{ text: "Hello world." }],
+        knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "world" }],
+      });
+
+      const listed = await repository.listBooksWithReviewSentencesForFamily("family_1");
+      expect(listed.some((b) => b.id === draft.bookId)).toBe(true);
+      expect(listed[0]).toEqual(
+        expect.objectContaining({
+          id: draft.bookId,
+          title: "Reviewable Book",
+          pageCount: 1,
+          updatedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it("does not list another family's reviewable books when querying family_1", async () => {
+      const repository = createInMemoryBookIngestionRepository();
+      const otherDraft = await repository.createBookDraft({
+        familyId: "family_2",
+        title: "Other Family Book",
+        pages: [
+          {
+            pageOrder: 1,
+            originalImageUrl: "data:image/png;base64,x",
+            ocrDraft: {
+              sourceFileName: "x.png",
+              sentences: [{ text: "Secret." }],
+              knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "secret", variantKind: "base" }],
+            },
+          },
+        ],
+      });
+      const otherBook = await repository.getBookForReview(otherDraft.bookId);
+      await repository.confirmPage({
+        bookId: otherDraft.bookId,
+        pageId: otherBook?.pages[0]?.id ?? "",
+        parentConfirmed: true,
+        sentenceDrafts: [{ text: "Secret." }],
+        knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "secret" }],
+      });
+
+      expect((await repository.listBooksWithReviewSentencesForFamily("family_1")).some((b) => b.id === otherDraft.bookId)).toBe(
+        false,
+      );
+    });
+
+    it("returns ordered review sentences or null when family does not own the book", async () => {
+      const repository = createInMemoryBookIngestionRepository();
+      const draft = await repository.createBookDraft({
+        familyId: "family_1",
+        title: "Ordered Book",
+        pages: [
+          {
+            pageOrder: 2,
+            originalImageUrl: "data:image/png;base64,p2",
+            ocrDraft: {
+              sourceFileName: "p2.png",
+              sentences: [{ text: "Second page." }],
+              knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "second", variantKind: "base" }],
+            },
+          },
+          {
+            pageOrder: 1,
+            originalImageUrl: "data:image/png;base64,p1",
+            ocrDraft: {
+              sourceFileName: "p1.png",
+              sentences: [{ text: "Alpha." }, { text: "Beta." }],
+              knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "alpha", variantKind: "base" }],
+            },
+          },
+        ],
+      });
+      const book = await repository.getBookForReview(draft.bookId);
+      const page1 = book?.pages.find((p) => p.pageOrder === 1);
+      const page2 = book?.pages.find((p) => p.pageOrder === 2);
+      await repository.confirmPage({
+        bookId: draft.bookId,
+        pageId: page1?.id ?? "",
+        parentConfirmed: true,
+        sentenceDrafts: [{ text: "Alpha." }, { text: "Beta." }],
+        knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "alpha" }],
+      });
+      await repository.confirmPage({
+        bookId: draft.bookId,
+        pageId: page2?.id ?? "",
+        parentConfirmed: true,
+        sentenceDrafts: [{ text: "Second page." }],
+        knowledgeCandidates: [{ type: KnowledgeItemType.Word, surfaceForm: "second" }],
+      });
+
+      const wrongFamily = await repository.getBookSentenceReviewList({
+        familyId: "family_999",
+        bookId: draft.bookId,
+      });
+      expect(wrongFamily).toBeNull();
+
+      const result = await repository.getBookSentenceReviewList({
+        familyId: "family_1",
+        bookId: draft.bookId,
+      });
+      expect(result).not.toBeNull();
+      expect(result?.bookTitle).toBe("Ordered Book");
+      expect(result?.sentences.map((s) => s.sentenceText)).toEqual(["Alpha.", "Beta.", "Second page."]);
+      expect(result?.sentences[0]).toMatchObject({
+        pageOrder: 1,
+        pageImageUrl: "data:image/png;base64,p1",
+      });
+      expect(result?.sentences[2]).toMatchObject({
+        pageOrder: 2,
+        pageImageUrl: "data:image/png;base64,p2",
+      });
+    });
+
+    it("excludes books that only have draft pages from the review book list", async () => {
+      const repository = createInMemoryBookIngestionRepository();
+      const draft = await repository.createBookDraft({
+        familyId: "family_1",
+        title: "Draft Only",
+        pages: [
+          {
+            pageOrder: 1,
+            originalImageUrl: "data:image/png;base64,d",
+            ocrDraft: {
+              sourceFileName: "d.png",
+              sentences: [{ text: "Not confirmed yet." }],
+              knowledgeCandidates: [],
+            },
+          },
+        ],
+      });
+
+      expect((await repository.listBooksWithReviewSentencesForFamily("family_1")).some((b) => b.id === draft.bookId)).toBe(
+        false,
+      );
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { ExerciseType } from "@/domain/enums";
-import { AppShell, type AppShellNavItem } from "@/components/app-shell";
+import { AppShell } from "@/components/app-shell";
 import {
   getPracticeRepository,
   type ChildPracticeOverviewStats,
@@ -14,17 +14,12 @@ import {
 } from "@/lib/profile/child-today-profile";
 import { syncConfirmedPracticeExercises } from "@/lib/practice/sync-confirmed-practice";
 import { ensurePrototypeSession } from "@/lib/prototype-session";
+import { childNav } from "../child-nav";
 import { submitPracticeAttemptAction } from "./actions";
 import { toClientExercise } from "./client-practice-exercise";
 import { PracticeStepper } from "./practice-stepper";
 
 export const dynamic = "force-dynamic";
-
-const childNav = [
-  { id: "today", href: "/child/today", label: "今天" },
-  { id: "book-review", href: "/child/today", label: "绘本复习" },
-  { id: "stars", href: "/child/today", label: "我的星星" },
-] satisfies ReadonlyArray<AppShellNavItem>;
 
 export default async function ChildTodayPage() {
   const pageT0 = childTodayProfileNow();

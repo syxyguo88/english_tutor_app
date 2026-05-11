@@ -1,6 +1,6 @@
 # English Tutor App Current Status
 
-Updated: 2026-05-09
+Updated: 2026-05-09（孩子端步进器：答对后下一题 — 见 plan `2026-05-10-child-practice-stepper-session-flow.md`）
 
 ## Start Here
 
@@ -35,7 +35,7 @@ Completed **prototype** capabilities include:
 1. MVP foundation (domain, Prisma schema, role shell).
 2. Book ingestion UI + mock OCR → **PostgreSQL** via **`src/lib/book-ingestion/prisma-book-repository.ts`** (`getBookIngestionRepository()`).
 3. Practice generation + grading → **PostgreSQL** via **`src/lib/practice/prisma-practice-repository.ts`** (`getPracticeRepository()`).
-4. Child UX: practice stepper on **`/child/today`** — **答对后进入下一题**，最后一题答对后本轮完成；recent attempts list；**P2.3 练习总览**（连续打卡、今日/累计作答）；Server Actions + `router.refresh()` after submit. See **`docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`**.
+4. Child UX: practice stepper on **`/child/today`** — **答对后进入下一题**，最后一题答对后本轮完成；recent attempts list；**P2.3 练习总览**（连续打卡、今日/累计作答）；Server Actions + `router.refresh()` after submit. See **`docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`**. **C6 绘本复习：** **`/child/book-review`**（书单）与 **`/child/book-review/[bookId]`**（确认句列表 + 可选缩略图），spec **`2026-05-11-c6-child-book-review-mvp.zh.md`**。
 5. Parent dashboard: **低掌握度知识点** from practice DB (prototype child).
 6. Parent **绘本列表** **`/parent/books`** (`listBooksForFamily`) — upload → 列表 → 校对闭环。
 7. Dev DB: **`docker-compose.yml`**, **`prisma/migrations/`**, **`prisma/seed.ts`** (`prototype-family` / users / `ChildProfile`).
@@ -52,7 +52,9 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-Prioritized backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**. **P0** / **P1** / **P2**（含 **P2.3** 练习总览，见 spec **`2026-05-09-p2.3-practice-overview-streak.zh.md`**）完成度见该计划。下一步可选 **P3** 技术债或产品深化。
+**Stakeholder priority (2026-05-11):** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`** — **Track A**（不含看图裂图 P0）+ **Track C6 绘本复习 MVP**（约一月内孩子可玩）；看图裂图可后置。C6 技术规格：**`docs/superpowers/specs/2026-05-11-c6-child-book-review-mvp.zh.md`**。
+
+General backlog: **`docs/superpowers/plans/2026-05-10-next-development.md`**（P3 技术债等）。P0 / P1 / P2（含 P2.3）完成度见该计划。
 
 UX polish：P2 核心条目标已覆盖；进一步游戏化可另开计划。
 

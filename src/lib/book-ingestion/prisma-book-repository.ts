@@ -15,12 +15,14 @@ import {
   buildConfirmedPageContent,
   type NormalizedKnowledgeCandidate,
 } from "@/domain/book-ingestion";
+import { canUseSentenceForPractice } from "@/domain/content-rules";
 import { BookPageStatus, BookStatus, KnowledgeItemType } from "@/domain/enums";
 import type { MockPageOcrDraft } from "./mock-extractor";
 import type {
   BookForReview,
   BookIngestionRepository,
   BookReviewPage,
+  BookReviewSentenceRow,
   ConfirmedKnowledgeLink,
   ConfirmedPracticeContent,
   CreateBookDraftInput,
@@ -217,6 +219,7 @@ export function createPrismaBookIngestionRepository(
           sentences: page.sentences.map((sentence) => ({
             id: sentence.id,
             text: sentence.text,
+            confirmedAt: sentence.confirmedAt,
             knowledgeLinks: sentence.knowledgeLinks.map(mapKnowledgeLinkFromDb),
           })),
         })),
@@ -341,6 +344,7 @@ export function createPrismaBookIngestionRepository(
     async getConfirmedPracticeContent(): Promise<ConfirmedPracticeContent[]> {
       const sentences = await db.sentence.findMany({
         where: {
+          confirmedAt: { not: null },
           bookPage: {
             status: PrismaBookPageStatus.confirmed,
           },
@@ -360,15 +364,17 @@ export function createPrismaBookIngestionRepository(
         },
       });
 
-      return sentences.map((sentence): ConfirmedPracticeContent => ({
-        bookId: sentence.bookPage.book.id,
-        pageId: sentence.bookPage.id,
-        pageOrder: sentence.bookPage.pageOrder,
-        pageImageUrl: sentence.bookPage.originalImageUrl,
-        sentenceId: sentence.id,
-        sentenceText: sentence.text,
-        knowledgeLinks: sentence.knowledgeLinks.map(mapKnowledgeLinkFromDb),
-      }));
+      return sentences
+        .filter((sentence) => canUseSentenceForPractice({ confirmedAt: sentence.confirmedAt }))
+        .map((sentence): ConfirmedPracticeContent => ({
+          bookId: sentence.bookPage.book.id,
+          pageId: sentence.bookPage.id,
+          pageOrder: sentence.bookPage.pageOrder,
+          pageImageUrl: sentence.bookPage.originalImageUrl,
+          sentenceId: sentence.id,
+          sentenceText: sentence.text,
+          knowledgeLinks: sentence.knowledgeLinks.map(mapKnowledgeLinkFromDb),
+        }));
     },
 
     async getParentDashboardMetrics(): Promise<ParentDashboardMetrics> {
@@ -401,6 +407,89 @@ export function createPrismaBookIngestionRepository(
         readingDate: book.readingDate ? book.readingDate.toISOString().slice(0, 10) : null,
         updatedAt: book.updatedAt,
       }));
+    },
+
+    async listBooksWithReviewSentencesForFamily(familyId: string): Promise<FamilyBookSummary[]> {
+      const rows = await db.book.findMany({
+        where: {
+          familyId,
+          pages: {
+            some: {
+              status: PrismaBookPageStatus.confirmed,
+              sentences: {
+                some: {
+                  confirmedAt: { not: null },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          _count: { select: { pages: true } },
+        },
+      });
+
+      return rows.map((book) => ({
+        id: book.id,
+        title: book.title,
+        status: mapBookStatus(book.status),
+        pageCount: book._count.pages,
+        readingDate: book.readingDate ? book.readingDate.toISOString().slice(0, 10) : null,
+        updatedAt: book.updatedAt,
+      }));
+    },
+
+    async getBookSentenceReviewList(input: {
+      familyId: string;
+      bookId: string;
+    }): Promise<{ bookTitle: string; sentences: BookReviewSentenceRow[] } | null> {
+      const book = await db.book.findFirst({
+        where: { id: input.bookId, familyId: input.familyId },
+        select: {
+          title: true,
+          pages: {
+            where: { status: PrismaBookPageStatus.confirmed },
+            orderBy: { pageOrder: "asc" },
+            select: {
+              id: true,
+              pageOrder: true,
+              originalImageUrl: true,
+              sentences: {
+                where: { confirmedAt: { not: null } },
+                orderBy: { id: "asc" },
+                select: {
+                  id: true,
+                  text: true,
+                  confirmedAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!book) {
+        return null;
+      }
+
+      const sentences: BookReviewSentenceRow[] = [];
+      for (const page of book.pages) {
+        for (const sentence of page.sentences) {
+          if (!canUseSentenceForPractice({ confirmedAt: sentence.confirmedAt })) {
+            continue;
+          }
+          sentences.push({
+            sentenceId: sentence.id,
+            sentenceText: sentence.text,
+            pageOrder: page.pageOrder,
+            pageId: page.id,
+            pageImageUrl: page.originalImageUrl,
+          });
+        }
+      }
+
+      return { bookTitle: book.title, sentences };
     },
   };
 }

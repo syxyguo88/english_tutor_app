@@ -4,6 +4,7 @@ import {
   type NormalizedKnowledgeCandidate,
   type SentenceDraftInput,
 } from "@/domain/book-ingestion";
+import { canUseSentenceForPractice } from "@/domain/content-rules";
 import { BookPageStatus, BookStatus, type KnowledgeItemType } from "@/domain/enums";
 import { prisma } from "@/lib/db";
 import type { MockExtractedPageDraft, MockPageOcrDraft } from "./mock-extractor";
@@ -32,6 +33,7 @@ export type BookReviewPage = {
   sentences: Array<{
     id: string;
     text: string;
+    confirmedAt: Date | null;
     knowledgeLinks: ConfirmedKnowledgeLink[];
   }>;
 };
@@ -84,6 +86,14 @@ export type FamilyBookSummary = {
   updatedAt: Date;
 };
 
+export type BookReviewSentenceRow = {
+  sentenceId: string;
+  sentenceText: string;
+  pageOrder: number;
+  pageId: string;
+  pageImageUrl: string;
+};
+
 export type BookIngestionRepository = {
   createBookDraft(input: CreateBookDraftInput): Promise<CreateBookDraftResult>;
   getBookForReview(bookId: string): Promise<BookForReview | null>;
@@ -91,6 +101,11 @@ export type BookIngestionRepository = {
   getConfirmedPracticeContent(): Promise<ConfirmedPracticeContent[]>;
   getParentDashboardMetrics(): Promise<ParentDashboardMetrics>;
   listBooksForFamily(familyId: string): Promise<FamilyBookSummary[]>;
+  listBooksWithReviewSentencesForFamily(familyId: string): Promise<FamilyBookSummary[]>;
+  getBookSentenceReviewList(input: {
+    familyId: string;
+    bookId: string;
+  }): Promise<{ bookTitle: string; sentences: BookReviewSentenceRow[] } | null>;
 };
 
 type StoredKnowledgeItem = {
@@ -187,12 +202,14 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
 
       const confirmedContent = buildConfirmedPageContent(input);
       const knowledgeLinks = confirmedContent.knowledgeCandidates.map(upsertKnowledgeVariant);
+      const now = new Date();
 
       page.status = BookPageStatus.Confirmed;
-      page.confirmedAt = new Date();
+      page.confirmedAt = now;
       page.sentences = confirmedContent.sentences.map((sentence) => ({
         id: createId("sentence"),
         text: sentence.text,
+        confirmedAt: now,
         knowledgeLinks: knowledgeLinks.filter((link) => sentenceContainsKnowledge(sentence.text, link)),
       }));
 
@@ -209,15 +226,17 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
         book.pages
           .filter((page) => page.status === BookPageStatus.Confirmed)
           .flatMap((page) =>
-            page.sentences.map((sentence) => ({
-              bookId: book.id,
-              pageId: page.id,
-              pageOrder: page.pageOrder,
-              pageImageUrl: page.originalImageUrl,
-              sentenceId: sentence.id,
-              sentenceText: sentence.text,
-              knowledgeLinks: sentence.knowledgeLinks,
-            })),
+            page.sentences
+              .filter((sentence) => canUseSentenceForPractice({ confirmedAt: sentence.confirmedAt }))
+              .map((sentence) => ({
+                bookId: book.id,
+                pageId: page.id,
+                pageOrder: page.pageOrder,
+                pageImageUrl: page.originalImageUrl,
+                sentenceId: sentence.id,
+                sentenceText: sentence.text,
+                knowledgeLinks: sentence.knowledgeLinks,
+              })),
           ),
       );
     },
@@ -244,6 +263,57 @@ export function createInMemoryBookIngestionRepository(): BookIngestionRepository
           updatedAt: bookUpdatedAt.get(book.id) ?? new Date(0),
         }))
         .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    },
+
+    async listBooksWithReviewSentencesForFamily(familyId: string) {
+      return Array.from(books.values())
+        .filter((book) => book.familyId === familyId)
+        .filter((book) =>
+          book.pages.some(
+            (page) =>
+              page.status === BookPageStatus.Confirmed &&
+              page.sentences.some((sentence) => canUseSentenceForPractice({ confirmedAt: sentence.confirmedAt })),
+          ),
+        )
+        .map((book) => ({
+          id: book.id,
+          title: book.title,
+          status: book.status,
+          pageCount: book.pages.length,
+          readingDate: book.readingDate,
+          updatedAt: bookUpdatedAt.get(book.id) ?? new Date(0),
+        }))
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    },
+
+    async getBookSentenceReviewList(input: { familyId: string; bookId: string }) {
+      const book = books.get(input.bookId);
+      if (!book || book.familyId !== input.familyId) {
+        return null;
+      }
+
+      const sentences: BookReviewSentenceRow[] = [];
+      const pages = [...book.pages]
+        .filter((page) => page.status === BookPageStatus.Confirmed)
+        .sort((a, b) => a.pageOrder - b.pageOrder);
+
+      for (const page of pages) {
+        const pageSentences = [...page.sentences]
+          .filter((sentence) => canUseSentenceForPractice({ confirmedAt: sentence.confirmedAt }))
+          .sort((a, b) => a.id.localeCompare(b.id));
+
+        for (const sentence of pageSentences) {
+          sentences.push({
+            sentenceId: sentence.id,
+            sentenceText: sentence.text,
+            pageOrder: page.pageOrder,
+            pageId: page.id,
+            pageImageUrl: page.originalImageUrl,
+          });
+        }
+      }
+
+      return { bookTitle: book.title, sentences };
     },
   };
 }
