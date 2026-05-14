@@ -8,7 +8,7 @@
 
 | # | Decision |
 |---|----------|
-| 1 | **Implementation order:** prioritize **Track A** (below, minus看图裂图) **+ Track C6** before other backlog items. |
+| 1 | **Implementation order:** **C6 绘本复习 MVP 已落地**（2026-05-11）。继续 **Track A**（不含看图裂图）与 **`2026-05-10-next-development.md`** 技术债；多文件任务 **SDD**。 |
 | 2 | **看图练习裂图:** **not P0** — may defer; no mandatory fix in this phase. |
 | 3 | **Time horizon:** aim for a **child-playable MVP within ~one month** — primary deliverable is **C6 绘本复习** slice that a first-grader can actually use weekly. |
 
@@ -49,15 +49,16 @@
 
 ## Suggested order of execution
 
-1. **C6 scaffold** — route + nav + empty/loading states + data query (confirmed content only).  
-2. **C6 core UI** — list/detail enough for “play” (read-along or simple flip is enough for MVP definition workshop).  
-3. **Track A** — pick 1–2 concrete bugs from production use (excluding 看图裂图) as they appear; otherwise keep A as buffer after C6 vertical slice lands.
+1. ~~**C6 scaffold** — route + nav + empty states + data query~~ **Done (2026-05-11).**  
+2. ~~**C6 core UI** — list + sentence vertical list + optional thumbnail~~ **Done.**  
+3. **Track A** — pick concrete bugs (excluding 看图裂图); optional **C6 Playwright** (spec AC7).  
+4. **「我的星星」** — replace placeholder nav when spec exists.
 
 ---
 
 ## Implementation status (C6)
 
-**Shipped in repo:** `/child/book-review`, `/child/book-review/[bookId]`, `BookIngestionRepository` review APIs + TDD tests, shared `child-nav`, README note. Spec §9–10 updated in `2026-05-11-c6-child-book-review-mvp.zh.md`.
+**Shipped in repo (2026-05-11):** `/child/book-review`, `/child/book-review/[bookId]`, `BookIngestionRepository` review APIs + TDD tests, shared `child-nav`, `getConfirmedPracticeContent` sentence filter, **`getBookIngestionRepository()` HMR/stale-global refresh** (`isFreshBookIngestionRepository`). README + spec §9–10. **Optional:** Playwright for book-review (spec AC7).
 
 ---
 

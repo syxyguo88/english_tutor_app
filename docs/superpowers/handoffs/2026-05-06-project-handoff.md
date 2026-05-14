@@ -1,7 +1,7 @@
 # English Tutor App Project Handoff
 
 Date: 2026-05-06  
-**Last handoff refresh:** 2026-05-09（对接下一任 agent：请读本节「Latest Handoff Update」与 `current-status.md`）
+**Last handoff refresh:** 2026-05-11（对接下一任 agent：请读本节「Latest Handoff Update」与 `docs/superpowers/current-status.md`）
 
 ## Start Here For New Agents
 
@@ -11,11 +11,11 @@ For a short current-state entry point, read:
 docs/superpowers/current-status.md
 ```
 
-Prioritized backlog（**P0–P2 已在仓库完成**；下一步见 **`2026-05-10-next-development.md`** 的 **P3 / P1.3**）：
+**产品优先级（stakeholder）：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**（Track A 余量 + C6 已落地；看图裂图非 P0）。
 
-```text
-docs/superpowers/plans/2026-05-10-next-development.md
-```
+通用技术债与 CI：**`docs/superpowers/plans/2026-05-10-next-development.md`**（P3 等）。
+
+C6 技术规格：**`docs/superpowers/specs/2026-05-11-c6-child-book-review-mvp.zh.md`**。
 
 Use this full handoff as the historical record when deeper context is needed.
 
@@ -55,22 +55,26 @@ Use this full handoff as the historical record when deeper context is needed.
 
 ## Latest Handoff Update
 
-**Updated: 2026-05-09** — 对接**新开 agent**：请先读 `docs/superpowers/current-status.md`，再读本文件的「Agent workflow」与「Recommended next tasks」。
+**Updated: 2026-05-11** — 对接**新开 agent**：先读 **`docs/superpowers/current-status.md`**，再读本节与 **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**。
 
 ### Branch and tip commit
 
 - **Path:** `/Users/darren/code/build_ai/english_tutor_app`
 - **Branch:** **`mvp-foundation`**
-- **Tip commit（请以 `git log -1` 为准）：** **`178b762`** — `feat(practice): P2.3 streak + totals overview on child today`
-- **Remote sync:** 本地分支当时曾 **ahead of `origin/mvp-foundation` 若干 commit**；接手后请先 **`git fetch`** / **`git status`**，必要时 **`git push`**（若在受限网络下 SSH 失败，仓库规则 **`.cursor/rules/git-ssh-proxy-bypass.mdc`**：GitHub 使用 **`ssh.github.com:443`**）。
+- **Tip commit（请以 `git log -1` 为准）：** **`0c7f582`** — `fix(book-ingestion): recreate global repo when C6 methods missing (HMR)`（若与本地不符，以你机器 `git log -1` 为准）
+- **Remote sync:** 接手后 **`git fetch`** / **`git status`**；推送若 SSH 失败用 **`.cursor/rules/git-ssh-proxy-bypass.mdc`**（`ssh.github.com:443`）。
 
 ### 已完成范围摘要（不必重做）
 
 | 轨道 | 状态 |
 |------|------|
 | **P0** | README 本地 DB/e2e 路径、e2e/build 抽查、Phase D 文档对齐 — **已完成**（见本文件上方 checklist `[x]`）。 |
-| **P1** | **`.github/workflows/ci.yml`**：`unit`（migrate + typecheck + lint + vitest）+ **`e2e`**（seed + Playwright Chromium **`--with-deps`**）；曾因 **`NO_PROXY`/`no_proxy` 重复键**导致 workflow 无效，已修复为仅 **`NO_PROXY`**。 |
-| **P2** | **P2.1** 空状态、**P2.2**「待复核 AI 判断」占位、**P2.3** 孩子端练习总览（**`getChildPracticeOverview`** / **`practice-calendar`**）、家长 **`/parent/books`** 列表（**`listBooksForFamily`**）。P2.3 规格：`docs/superpowers/specs/2026-05-09-p2.3-practice-overview-streak.zh.md`。 |
+| **P1** | **`.github/workflows/ci.yml`**：`unit` + Chromium **`e2e`**；**P1.3** opt-in **`RUN_INTEGRATION=1`** Prisma 集成测试骨架（`*.integration.test.ts`，README 已说明）。 |
+| **P2** | **P2.1–P2.3** 与 **`/parent/books`** 等（见往期 handoff）。 |
+| **孩子端练习流** | **`/child/today`**：**答对后才下一题** + `router.refresh()`；最后一题答对「本轮完成」。计划：`docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`。 |
+| **C6 绘本复习** | **`/child/book-review`**、**`/child/book-review/[bookId]`**；**`listBooksWithReviewSentencesForFamily`** / **`getBookSentenceReviewList`**；共享 **`src/app/child/child-nav.ts`**；**`getConfirmedPracticeContent`** 已收紧 **`Sentence.confirmedAt`**。规格：`docs/superpowers/specs/2026-05-11-c6-child-book-review-mvp.zh.md`。 |
+| **P3（部分）** | **P3.2** `getRecentAttempts` 只 `select exercise.type`；**P3.3** `PROFILE_CHILD_TODAY_JSON` 门控 JSON 日志；**P3.1** 单页上传 5MiB cap。见 **`2026-05-10-next-development.md`**。 |
+| **Dev 体验** | **`getBookIngestionRepository()`** 若全局缓存缺 C6 方法会**重建实例**（避免 HMR 后 `listBooksWithReviewSentencesForFamily is not a function`）。仍可按习惯 **`rm -rf .next` + 重启 dev** 排障。 |
 
 ### Agent workflow (mandatory for plan/handoff work)
 
@@ -96,11 +100,11 @@ Shared constants (avoid circular imports): `src/lib/practice/constants.ts` (`LOW
 
 ### UX notes (child / parent)
 
-- **`PROFILE_CHILD_TODAY` (perf):** Set **`PROFILE_CHILD_TODAY=1`** in dev to log **`[profile:child-today]`** for `/child/today`. **`getTodayPractice`** uses a **two-phase `Exercise` read** (light `select` for eligibility scan, then full rows by id for the few shown) because profiling showed one full `findMany` over ~120 rows was **~3s** due to large **`prompt` / `expectedAnswer` JSON**. See README subsection “`PROFILE_CHILD_TODAY`” and `src/lib/practice/prisma-practice-repository.ts`.
-- **`/child/today`:** `PracticeStepper` client component; **`submitPracticeAttemptAction`** passed as a prop from the server page (avoids `UnrecognizedActionError` after HMR). **P2.3:** 顶部「我的练习」卡片 — **`getChildPracticeOverview`**（连续打卡天、今日/累计作答）；打卡按运行环境**本地日历日**（CI 多为 UTC，与开发者本机可能差一日，属原型已知差异）。
-- **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` must stay in a **non-**`"use client"` module (do not call client-module helpers from RSC).
-- **Parent dashboard:** “低掌握度知识点” uses `countLowMasteryKnowledge` for the prototype child；「待复核 AI 判断」为原型占位（计划 P2.2）。
-- **Parent `/parent/books`:** 绘本列表 **`listBooksForFamily`**；导航「绘本」→ 列表，「上传」→ **`/parent/books/new`**。
+- **`PROFILE_CHILD_TODAY` (perf):** Set **`PROFILE_CHILD_TODAY=1`** in dev to log **`[profile:child-today]`** for `/child/today`. Structured JSON lines need **`PROFILE_CHILD_TODAY_JSON=1`** as well. See README.
+- **`/child/today`:** `PracticeStepper` — client submit + **`submitPracticeAttemptAction`** returns **`{ isCorrect }`**；**答对后才 `setIndex`**；**`router.refresh()`** 刷新掌握分与列表。**P2.3** 顶部「我的练习」卡片 — **`getChildPracticeOverview`**。
+- **`/child/book-review`:** 只读复习；**不**调用 **`syncConfirmedPracticeExercises`**（仍在 **`/child/today`**）。缩略图 **`SentenceThumbnail`**：`onError` 隐藏；看图 data URL 裂图**非本阶段 P0**（见 phase priorities）。
+- **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` stays in a **non-**`"use client"` module.
+- **Parent dashboard:** 「待复核 AI 判断」占位；**`/parent/books`** 列表 + **`/parent/books/new`** 上传 + **`/[bookId]/review`** 校对。
 
 ### Product boundaries (unchanged intent)
 
@@ -112,7 +116,7 @@ Still a **family prototype**: deterministic practice/OCR mock, no real AI gradin
 npm run prisma:generate
 npm run typecheck   # pass
 npm run lint        # pass
-npm run test        # 10 files, 50 tests pass (Vitest)
+npm run test        # Vitest：约 12 files / 63 passed + 1 integration skipped（无 RUN_INTEGRATION）
 ```
 
 **CI:** `.github/workflows/ci.yml` — `push`/`pull_request` 至 **`main`** / **`mvp-foundation`**；合并前在 GitHub Actions 确认 **Unit** + **E2E** 均绿。
@@ -129,14 +133,15 @@ After major persistence or UX changes: re-run **`npm run test:e2e`**（Postgres 
 
 ### Recommended next tasks
 
-1. **Primary:** **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P3** 技术债（图片/Payload、Prisma 7、`getRecentAttempts` 瘦身等）按需排期；可选 **P1.3** `RUN_INTEGRATION=1` 集成测试骨架。
-2. **Process:** 计划内多文件任务 **必须用 SDD**（`.cursor/rules/default-subagent-driven-development.mdc`），协调员 **禁止**亲自实现业务代码。
-3. **Product（更长线）：** 真实 OCR/存储/音频 — 见设计总 spec。
+1. **Primary（产品）：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`** — **Track A** 余量（除看图裂图外的小可靠性项）；**「我的星星」**仍为占位（`/child/today`）；可选 **C6 Playwright**（spec AC7）。
+2. **技术债：** **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P3.4** Prisma 7、对象存储 spike、**img src 白名单**（代码审查建议）等。
+3. **Process:** 多文件计划任务 **SDD** + 需要 TDD 时 **先测后码**（`.cursor/rules/default-subagent-driven-development.mdc`）。
+4. **长线：** 真实 OCR / 存储 / 音频 — 设计总 spec。
 
 ### One-Line Handoff
 
 ```text
-Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip 178b762 — verify with git log). Read docs/superpowers/current-status.md and this handoff “Latest Handoff Update”. P0–P2 are done; follow docs/superpowers/plans/2026-05-10-next-development.md for P3 / optional P1.3. Mandatory: subagent-driven development for multi-file plan work; use .cursor/rules/git-ssh-proxy-bypass.mdc if git push over SSH fails behind local proxy.
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip: git log -1). Read docs/superpowers/current-status.md and this handoff “Latest Handoff Update” (2026-05-11). C6 /child/book-review shipped; child today = advance on correct answer; P1.3 integration tests opt-in; partial P3. Next: docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md + 2026-05-10-next-development.md. SDD for multi-file work; git-ssh-proxy-bypass.mdc for GitHub SSH behind proxy.
 ```
 
 ## Repository
