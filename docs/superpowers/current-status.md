@@ -1,6 +1,6 @@
 # English Tutor App Current Status
 
-Updated: 2026-05-11
+Updated: 2026-05-12
 
 ## Start Here
 
@@ -8,6 +8,12 @@ Short entry point for new agents. Deep history and narrative live in:
 
 ```text
 docs/superpowers/handoffs/2026-05-06-project-handoff.md
+```
+
+**长期路线图（A–E，已开发 / 待开发一览）：**
+
+```text
+docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md
 ```
 
 **Product / phase priorities (stakeholder):**
@@ -34,6 +40,13 @@ Subagent-driven development is **mandatory** for handoff/plan work:
 - Branch: **`mvp-foundation`**
 - **Tip:** run **`git log -1`** locally (recent work includes C6 book review, child practice stepper, P1.3 integration tests, partial P3, book-ingestion **HMR singleton refresh**).
 
+## 当前开发聚焦（长期路线图）
+
+- **主表：** [`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`](plans/2026-05-12-long-term-roadmap.zh.md) — 请与路线图 **§当前迭代聚焦** 同步修改（开新功能时更新「正在做哪一条」）。
+- **本文件约定（截至最近更新）：** **Track A — 可靠性与数据** 为默认下一迭代优先域（与 [`2026-05-11-phase-priorities-parent-child.md`](plans/2026-05-11-phase-priorities-parent-child.md) 一致）；**尚无单独命名的「进行中」feature ticket** 时，此处表示**组织优先级上的当前棒**，而非某一 Git branch 名称。
+
+开始具体开发某一长期条目时：把上一段第二句改为例如 **`进行中：A2 — last question mastery strip`**，并在路线图文档 **§当前迭代聚焦** 写同一句话。
+
 ## Product State (runtime)
 
 Completed **prototype** capabilities include:
@@ -57,9 +70,10 @@ Completed **prototype** capabilities include:
 
 ## Recommended Next Work
 
-1. **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`** — **Track A** remainder (small reliability, excluding deferred 看图裂图); optional **C6 e2e** (spec AC7); **「我的星星」** still placeholder → `/child/today`.
-2. **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P3.4** Prisma 7, remaining P3, **img `src` allowlist** (security hardening when URLs are user-controlled).
-3. Multi-file features: **SDD**; when the plan asks for **TDD**, add failing tests before implementation.
+1. **先打开** [**长期路线图**](plans/2026-05-12-long-term-roadmap.zh.md) 看 A–E 状态与 **§当前迭代聚焦**。  
+2. **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`** — Track A 余量、C6 E2E 可选、「我的星星」。  
+3. **`docs/superpowers/plans/2026-05-10-next-development.md`** — P3.4、其余 P3、安全加固。  
+4. 多文件：**SDD**；需要时 **TDD**。
 
 ## Verification Snapshot (last recorded locally)
 
@@ -86,4 +100,4 @@ Set **`PROFILE_CHILD_TODAY=1`** for phase timing logs. Add **`PROFILE_CHILD_TODA
 
 ## One-Line Handoff
 
-Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app` (**`git log -1`** for tip): read **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`** «Latest Handoff Update» (2026-05-11) and this file. **C6** `/child/book-review` shipped; **child today** = correct-only advance + refresh; **P1.3** + partial **P3**. Next: **`2026-05-11-phase-priorities-parent-child.md`**, **`2026-05-10-next-development.md`**. **SDD** for multi-file work; **`.cursor/rules/git-ssh-proxy-bypass.mdc`** for GitHub SSH.
+Take over **`mvp-foundation`** at `/Users/darren/code/build_ai/english_tutor_app` (**`git log -1`** for tip): read **`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`**（A–E 状态 + **§当前迭代聚焦**）, **`docs/superpowers/handoffs/2026-05-06-project-handoff.md`**, and this file. **SDD** for multi-file work; **`.cursor/rules/git-ssh-proxy-bypass.mdc`** for GitHub SSH.

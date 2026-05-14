@@ -1,5 +1,7 @@
 # Phase priorities — parent / child (decision 2026-05-11)
 
+> **长期路线图（A–E 已/待开发总表）：** [2026-05-12-long-term-roadmap.zh.md](./2026-05-12-long-term-roadmap.zh.md) — 与本文件交叉维护。
+
 > **Source:** Product direction from stakeholder. Use with `superpowers:subagent-driven-development` when implementing multi-file work.
 
 ---

@@ -1,6 +1,7 @@
 # Next development plan (post–Prisma prototype + child page perf)
 
 Updated: 2026-05-10  
+**长期路线图（A–E）：** [2026-05-12-long-term-roadmap.zh.md](./2026-05-12-long-term-roadmap.zh.md)  
 **Context:** Persistence Phases A–D are reflected in the repo (runtime **`get*Repository()`** uses Prisma; Phase D status is documented in **`2026-05-08-prisma-persistence.md`**). Child `/child/today` **two-phase `Exercise` reads**, `PROFILE_CHILD_TODAY` profiling, and `unstable_cache` for confirmed→exercise sync are in place. This plan picks up **verification, CI, product polish, and optional deeper work**.
 
 Use **`superpowers:subagent-driven-development`** when executing multi-file tasks from this plan unless the change is trivial.

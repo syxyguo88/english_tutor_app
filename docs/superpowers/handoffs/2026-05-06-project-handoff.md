@@ -1,7 +1,7 @@
 # English Tutor App Project Handoff
 
 Date: 2026-05-06  
-**Last handoff refresh:** 2026-05-11（对接下一任 agent：请读本节「Latest Handoff Update」与 `docs/superpowers/current-status.md`）
+**Last handoff refresh:** 2026-05-12（对接下一任 agent：请读 `current-status.md`、**长期路线图** `plans/2026-05-12-long-term-roadmap.zh.md`、与本节「Latest Handoff Update」）
 
 ## Start Here For New Agents
 
@@ -10,6 +10,8 @@ For a short current-state entry point, read:
 ```text
 docs/superpowers/current-status.md
 ```
+
+**长期路线图（A–E，已开发 / 待开发）：** **`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`**（与 `current-status` **「当前开发聚焦」** 同步）。
 
 **产品优先级（stakeholder）：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**（Track A 余量 + C6 已落地；看图裂图非 P0）。
 
@@ -133,15 +135,16 @@ After major persistence or UX changes: re-run **`npm run test:e2e`**（Postgres 
 
 ### Recommended next tasks
 
-1. **Primary（产品）：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`** — **Track A** 余量（除看图裂图外的小可靠性项）；**「我的星星」**仍为占位（`/child/today`）；可选 **C6 Playwright**（spec AC7）。
-2. **技术债：** **`docs/superpowers/plans/2026-05-10-next-development.md`** — **P3.4** Prisma 7、对象存储 spike、**img src 白名单**（代码审查建议）等。
-3. **Process:** 多文件计划任务 **SDD** + 需要 TDD 时 **先测后码**（`.cursor/rules/default-subagent-driven-development.mdc`）。
-4. **长线：** 真实 OCR / 存储 / 音频 — 设计总 spec。
+1. **长期路线图：** **`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`** — 看 A–E 状态与 **§当前迭代聚焦**（与 `current-status` 同步）。
+2. **Track A 余量、可选 C6 e2e：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**
+3. **P3 / Prisma 7 / CI 细节：** **`docs/superpowers/plans/2026-05-10-next-development.md`**
+4. **Process:** 多文件 **SDD**；需要 TDD 时 **先测后码**。
+5. **长线产品：** `docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md`
 
 ### One-Line Handoff
 
 ```text
-Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip: git log -1). Read docs/superpowers/current-status.md and this handoff “Latest Handoff Update” (2026-05-11). C6 /child/book-review shipped; child today = advance on correct answer; P1.3 integration tests opt-in; partial P3. Next: docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md + 2026-05-10-next-development.md. SDD for multi-file work; git-ssh-proxy-bypass.mdc for GitHub SSH behind proxy.
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip: git log -1). Read docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md (A–E + §当前迭代聚焦), docs/superpowers/current-status.md, and this handoff “Latest Handoff Update”. SDD + git-ssh-proxy-bypass.mdc for GitHub SSH.
 ```
 
 ## Repository
