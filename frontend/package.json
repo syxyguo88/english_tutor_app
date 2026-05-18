@@ -15,7 +15,7 @@
     "test:e2e:all": "playwright test"
   },
   "dependencies": {
-    "@english-tutor/backend": "file:../backend",
+    "@english-tutor/backend": "*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
     "next": "^15.3.2",
