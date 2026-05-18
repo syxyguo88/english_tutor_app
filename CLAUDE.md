@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概览
 
-这是一个 **SpecCoding 全栈开发模板**，基于 Claude Code + OpenSpec + Superpowers 三件套工作流。
+这是一个 **SpecCoding 全栈开发模板**，基于 Claude Code + OpenSpec + Superpowers 三件套工作流。**English Tutor** 应用代码按 npm workspaces 分布在 `backend/` 与 `frontend/`；**不要**沿用迁移前的「仓库根目录 `src/`」心智模型——**目录与源码路径以 `spec/structure.md` 为唯一事实来源**（含根级 `tests/e2e/`、`vitest.config.ts`、`playwright.config.ts` 等）。
 
-- `backend/` — 后端服务（技术栈自选）
-- `frontend/` — 前端（Web / H5 / App 皆可）
+- `backend/` — Prisma 与 DB 相关导出（`@english-tutor/backend`）
+- `frontend/` — Next.js 应用（`@english-tutor/frontend`）
 - `prototype/` — 原型设计稿
 - `spec/` — **项目级** spec 文档（整体需求/设计/结构/进度）
 - `openspec/` — **需求级** spec 文档（由 OpenSpec 管理的单个变更）
 
-项目结构详见 `spec/structure.md`。
+开始改代码前请先读 **`spec/structure.md`**，再打开对应子目录。
 
 **使用方式**：克隆本仓库后，先填 `spec/requirements.md` 和 `spec/design.md` 定全局，再在 `spec/tasks.md` 拆任务，之后每个任务走一次「七阶段工作流」（见下文）。
 
