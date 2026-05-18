@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@english-tutor/backend";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 describe.skipIf(process.env.RUN_INTEGRATION !== "1")(

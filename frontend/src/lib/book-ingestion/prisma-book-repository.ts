@@ -4,7 +4,7 @@
  * do not rely on DB defaults and remain clearly traceable in logs.
  */
 import { randomUUID } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@english-tutor/backend";
 import {
   BookPageStatus as PrismaBookPageStatus,
   BookStatus as PrismaBookStatus,

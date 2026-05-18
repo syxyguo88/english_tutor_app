@@ -4,7 +4,7 @@
  * Ordering: {@link Exercise.createdOrder} increments on each **new** exercise insert (deduped by
  * deterministic {@link Exercise.id}), matching in-memory “newest `createdOrder` first” semantics.
  */
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@english-tutor/backend";
 import {
   AttemptInputMode as PrismaAttemptInputMode,
   ExerciseType as PrismaExerciseType,
