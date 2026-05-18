@@ -172,9 +172,37 @@ git branch -d feature/add-user-auth
 │
 ├── .codebuddy/            # CodeBuddy 配置（若使用 CodeBuddy 国际版）
 │
-├── backend/               # 后端代码（待填）
-├── frontend/              # 前端代码（待填）
+├── backend/               # Prisma / DB（workspace @english-tutor/backend）
+├── frontend/              # Next.js（workspace @english-tutor/frontend）
+├── tests/e2e/             # Playwright 规格（配置在仓库根 playwright.config.ts）
+├── playwright.config.ts
+├── vitest.config.ts       # 单元 / 集成测试入口（根目录 npm run test）
+├── docker-compose.yml     # 本地 Postgres（可选）
 └── prototype/             # 原型设计（待填）
+```
+
+---
+
+## English Tutor 本地开发（monorepo）
+
+本仓库在 **npm workspaces** 下运行：**总在仓库根目录执行**下列命令。请先 **`cp .env.example .env`**，并确认 **`DATABASE_URL`** 与 `docker-compose.yml` 一致。
+
+```bash
+npm ci
+npm run db:up                 # docker compose：拉起本地 Postgres
+npm run prisma:generate
+npx prisma migrate deploy --schema backend/prisma/schema.prisma
+# 开发中新建或迭代迁移（migrate dev）也可用：npm run db:migrate
+npm run db:seed
+npm run dev                   # Next.js 开发服务器（frontend workspace）
+```
+
+测试与 E2E（根目录脚本；E2E 依赖本地 DB + 已 migrate/seed）：
+
+```bash
+npm run test
+npm run test:e2e
+RUN_INTEGRATION=1 npm run test
 ```
 
 ---
