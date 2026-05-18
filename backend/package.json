@@ -10,15 +10,16 @@
     "./db": "./src/db.ts"
   },
   "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:validate": "prisma validate",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "prisma:generate": "npm exec prisma -- generate",
+    "prisma:validate": "npm exec prisma -- validate",
+    "db:migrate": "npm exec prisma -- migrate dev",
+    "db:seed": "npm exec prisma -- db seed"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2"
   },
   "devDependencies": {
+    "dotenv": "^16.5.0",
     "prisma": "^6.8.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"

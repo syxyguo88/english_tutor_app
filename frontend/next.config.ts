@@ -1,4 +1,10 @@
+import { config } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "../.env") });
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@english-tutor/backend"],

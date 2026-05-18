@@ -16,22 +16,25 @@ for (const key of ["NO_PROXY", "no_proxy"] as const) {
   }
 }
 
-/** When 3000 is taken (stray `next dev`), run: `E2E_PORT=3001 npm run test:e2e` */
-const e2ePort = process.env.E2E_PORT ?? "3000";
+/** When unset, avoid colliding with a typical local `next dev` on 3000. Prefer `npm run test:e2e` so `scripts/run-e2e.mjs` can pick a free port. */
+const e2ePort = process.env.E2E_PORT ?? "3001";
 const baseURL = `http://127.0.0.1:${e2ePort}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   use: {
     baseURL,
     trace: "on-first-retry",
   },
   webServer: {
-    // Regenerate client so Exercise schema fields match DB migrations before booting Next.
-    command: `npm run prisma:generate && PORT=${e2ePort} npm run dev`,
+    // Production server avoids dev-mode Server Action / compilation races during e2e.
+    // Own dev server: `PW_REUSE_DEV_SERVER=1 npm run dev` with matching `E2E_PORT`.
+    command: `npm run prisma:generate && npm run build && PORT=${e2ePort} npm run start`,
     url: baseURL,
+    timeout: 300_000,
     // Default false: a long-lived dev server may still load an outdated @prisma/client (breaks /child/today).
     // To attach to your own server: PW_REUSE_DEV_SERVER=1 npm run test:e2e
     reuseExistingServer: process.env.PW_REUSE_DEV_SERVER === "1",

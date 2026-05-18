@@ -8,10 +8,11 @@ test("parent creates and confirms a mock-ingested book", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "上传绘本" })).toBeVisible();
   await page.getByLabel("绘本标题").fill("Playwright Picture Book");
   await page.getByLabel("标签").fill("animals, school");
+  // Under MAX_BOOK_PAGE_IMAGE_BYTES (5 MiB) so server action accepts the upload.
   await page.getByLabel("页面图片").setInputFiles({
     name: "page-one.png",
     mimeType: "image/png",
-    buffer: Buffer.alloc(12_000_000, "mock-page-one"),
+    buffer: Buffer.alloc(4_000_000, "mock-page-one"),
   });
 
   await page.getByRole("button", { name: "创建草稿并模拟识别" }).click();
