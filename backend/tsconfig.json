@@ -9,7 +9,6 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "rootDir": "src",
     "outDir": "dist"
   },
   "include": ["src/**/*.ts", "prisma/seed.ts"]
