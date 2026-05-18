@@ -2,8 +2,11 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
+const frontendRoot = fileURLToPath(new URL("./frontend", import.meta.url));
+
 export default defineConfig({
   plugins: [react()],
+  root: frontendRoot,
   test: {
     environment: "jsdom",
     globals: true,
@@ -16,7 +19,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@": fileURLToPath(new URL("./frontend/src", import.meta.url)),
     },
   },
 });
