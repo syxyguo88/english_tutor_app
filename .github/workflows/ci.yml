@@ -49,7 +49,7 @@ jobs:
         run: npm ci
 
       - name: Apply database migrations
-        run: npx prisma migrate deploy
+        run: npx prisma migrate deploy --schema backend/prisma/schema.prisma
 
       - name: Generate Prisma client
         run: npm run prisma:generate
@@ -101,13 +101,13 @@ jobs:
         run: npm ci
 
       - name: Apply database migrations
-        run: npx prisma migrate deploy
-
-      - name: Seed database
-        run: npm run db:seed
+        run: npx prisma migrate deploy --schema backend/prisma/schema.prisma
 
       - name: Generate Prisma client
         run: npm run prisma:generate
+
+      - name: Seed database
+        run: npm run db:seed
 
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
