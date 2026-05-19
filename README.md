@@ -197,7 +197,17 @@ npm run db:seed
 npm run dev                   # Next.js 开发服务器（frontend workspace）
 ```
 
-测试与 E2E（根目录脚本；E2E 依赖本地 DB + 已 migrate/seed）：
+### 验证（推荐）
+
+先决条件：已配置 **`.env`**，并完成 **`npm ci`**、**`npm run db:up`**、migrate、**`npm run db:seed`**（与上文本地开发步骤一致）。
+
+```bash
+npm run verify                # prisma:generate + validate + typecheck + lint + test + build
+npm run verify:integration    # 同上，且 RUN_INTEGRATION=1 跑 Prisma 集成测试
+npm run verify:e2e            # verify + Chromium e2e（需 DB 已 up / migrate / seed）
+```
+
+测试与 E2E（根目录脚本；E2E 依赖本地 DB + 已 migrate/seed；单步命令等价于 verify 子集，见上「验证（推荐）」）：
 
 ```bash
 npm run test
