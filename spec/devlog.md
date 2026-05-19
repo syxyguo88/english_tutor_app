@@ -31,6 +31,24 @@
 
 <!-- 最新条目在最上面 -->
 
+### 2026-05-19 · migrate-monorepo-frontend-backend
+
+**摘要**：将根目录 Next.js + Prisma 单体重组为 **npm workspaces monorepo**（`frontend/`、`backend/`），根目录保留编排、CI、compose 与 e2e；业务行为不变，验证命令（typecheck / lint / test / build / e2e）保持可用。已从 `feature/migrate-monorepo-frontend-backend` **合并回父分支 `mvp-foundation`**。
+
+**关键决策**：
+- **方案 A**：`@english-tutor/backend` 唯一托管 Prisma（`backend/prisma/`）；`@english-tutor/frontend` 整棵 Next + 领域/仓储；根 `package.json` 脚本委托 workspace
+- Playwright / Vitest 配置留在**仓库根**（`tests/e2e`、`playwright.config.ts`、`vitest.config.ts`）；e2e 用 **prod `build` + `start`**，启动前清 `frontend/.next` 避免 dev 残留
+- 本变更采用**回归测试 + 分步验证**，非 feature-level TDD；长期规格写入 `openspec/specs/monorepo-layout/`
+
+**踩坑 / 经验**：
+- `openspec-cn archive` 要求变更 spec 含 `## 新增需求` 与 `#### 场景:` 增量格式，否则归档中止
+- 本地 e2e：陈旧 `frontend/.next` 可导致 Server Actions / Prisma client 与生产构建不一致；`scripts/run-e2e.mjs` 可自动选空闲端口并绕过 loopback 代理
+
+**相关产出**：
+- 归档：`openspec/changes/archive/2026-05-19-migrate-monorepo-frontend-backend/`
+- 长期规格：`openspec/specs/monorepo-layout/spec.md`
+- 项目级：`spec/structure.md`、`spec/design.md`（§2.2 标为已实现）、`spec/tasks.md`（`migrate-monorepo-frontend-backend` ✅）
+
 ### 2026-05-15 · spec-baseline-kickoff-2026-05-15
 
 **摘要**：在分支 `mvp-foundation`（无 `version/v*`）以日期标签完成首版项目级 spec kickoff：从 `docs/superpowers/` 升格 `requirements.md`、`design.md`、`tasks.md`、`structure.md`，并约定 **OpenSpec 单变更** 负责 `frontend/` + `backend/` monorepo 迁移。
