@@ -54,6 +54,9 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
 
+      - name: Seed database
+        run: npm run db:seed
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -62,6 +65,12 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Integration tests (Prisma)
+        run: RUN_INTEGRATION=1 npm run test
 
   e2e:
     name: E2E
