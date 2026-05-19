@@ -2,8 +2,10 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { config } from "dotenv";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+config({ path: join(root, ".env") });
 
 /** @type {{ name: string; args: string[] }[]} */
 const DEFAULT_STEPS = [
