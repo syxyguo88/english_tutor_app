@@ -75,18 +75,15 @@ Completed **prototype** capabilities include:
 3. **`docs/superpowers/plans/2026-05-10-next-development.md`** — P3.4、其余 P3、安全加固。  
 4. 多文件：**SDD**；需要时 **TDD**。
 
-## Verification Snapshot (last recorded locally)
+## Verification Snapshot
 
-```text
-npm run prisma:generate
-npm run typecheck  → pass
-npm run lint       → pass
-npm run test       → ~12 files, 63 passed, 1 skipped (opt-in prisma.integration.test.ts)
+```bash
+npm run verify
+npm run verify:integration   # needs Postgres + seed
+npm run test:e2e             # or npm run verify:e2e
 ```
 
-Re-run **`npm run test:e2e`** after large persistence or nav/route changes.
-
-- **CI:** `.github/workflows/ci.yml` — `main` / `mvp-foundation`.
+Recorded: 2026-05-19 · branch `feature/post-migration-verification-hardening`
 
 ## `PROFILE_CHILD_TODAY`（孩子端性能对照）
 
