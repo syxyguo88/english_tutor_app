@@ -1,6 +1,6 @@
 # Proposal: migrate-monorepo-frontend-backend
 
-## 是什么（What）
+## 变更内容
 
 将当前**仓库根目录单体**布局（Next.js + Prisma 同根）重组为 **npm workspaces monorepo**：
 
@@ -10,7 +10,7 @@
 
 与项目级需求对齐：`spec/requirements.md` **R-2026-05-15-gd-16**、**R-2026-05-15-gd-17**、**R-2026-05-15-gd-18**；结构真相图：`spec/structure.md`。
 
-## 为什么（Why）
+## 为什么
 
 - **对齐模板与长期架构**：`spec/design.md` 决策 3 —— 分离 Web 壳与持久化边界，便于后续对象存储、真 OCR、独立 BFF。
 - **降低后续功能变更的耦合**：新功能继续走 `openspec/changes/<name>/`，物理目录与包名先稳定，减少「根目录全堆」带来的 import 与 CI 隐性依赖。

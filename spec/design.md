@@ -39,7 +39,7 @@
 
 ### 2.2 目标物理仓库布局
 
-见 `spec/structure.md`。**迁移前说明**：截至 kickoff，Next 应用与 `prisma/` 仍位于仓库根目录历史布局；**迁移后**以 `structure.md` 为准。
+见 `spec/structure.md`（**已实现**：`frontend/` + `backend/` monorepo；Prisma 在 `backend/prisma/`）。
 
 ---
 
