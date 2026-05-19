@@ -32,7 +32,8 @@ export default defineConfig({
   webServer: {
     // Production server avoids dev-mode Server Action / compilation races during e2e.
     // Own dev server: `PW_REUSE_DEV_SERVER=1 npm run dev` with matching `E2E_PORT`.
-    command: `npm run prisma:generate && npm run build && PORT=${e2ePort} npm run start`,
+    // Monorepo: clear stale frontend/.next (e.g. after `next dev`) before prod build for e2e.
+    command: `rm -rf frontend/.next && npm run prisma:generate && npm run build && PORT=${e2ePort} npm run start`,
     url: baseURL,
     timeout: 300_000,
     // Default false: a long-lived dev server may still load an outdated @prisma/client (breaks /child/today).
