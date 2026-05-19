@@ -18,7 +18,11 @@
     "db:migrate": "npm run db:migrate -w @english-tutor/backend",
     "db:seed": "npm run db:seed -w @english-tutor/backend",
     "prisma:validate": "npm run prisma:validate -w @english-tutor/backend",
-    "prisma:generate": "npm run prisma:generate -w @english-tutor/backend"
+    "prisma:generate": "npm run prisma:generate -w @english-tutor/backend",
+    "verify": "node scripts/verify.mjs",
+    "verify:integration": "node scripts/verify.mjs --integration",
+    "verify:e2e": "node scripts/verify.mjs --e2e",
+    "verify:all": "node scripts/verify.mjs --integration --e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
