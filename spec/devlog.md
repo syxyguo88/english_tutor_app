@@ -31,6 +31,24 @@
 
 <!-- 最新条目在最上面 -->
 
+### 2026-05-22 · post-migration-verification-hardening
+
+**摘要**：在 monorepo 落地后加固工程验证：`npm run verify` 串联 generate/validate/typecheck/lint/test/build；Vitest 与 `verify.mjs` 自动加载仓库根 `.env`；CI `unit` job 增加 seed、build、`RUN_INTEGRATION=1` 测试。已从 `feature/post-migration-verification-hardening` **合并回父分支 `mvp-foundation`**。
+
+**关键决策**：
+- 根脚本 `scripts/verify.mjs` + `verify:integration` / `verify:e2e`；**回归验证**为主，非 feature-level TDD
+- CI 在既有 Postgres service 的 `unit` job 内跑集成测试（非单独 job）
+- 长期规格：`openspec/specs/verification-hardening/`
+
+**踩坑 / 经验**：
+- `npm run verify` 最初未加载 `.env`，`prisma:validate` 在无 `DATABASE_URL` 时失败；已在 `verify.mjs` 用 `dotenv` 修复
+- `openspec-cn archive` 若长期 spec 已存在同名需求，需 `--skip-specs` 或先合并增量
+
+**相关产出**：
+- 归档：`openspec/changes/archive/2026-05-22-post-migration-verification-hardening/`
+- 长期规格：`openspec/specs/verification-hardening/spec.md`
+- 项目级：`spec/tasks.md`（`post-migration-verification-hardening` ✅）
+
 ### 2026-05-19 · migrate-monorepo-frontend-backend
 
 **摘要**：将根目录 Next.js + Prisma 单体重组为 **npm workspaces monorepo**（`frontend/`、`backend/`），根目录保留编排、CI、compose 与 e2e；业务行为不变，验证命令（typecheck / lint / test / build / e2e）保持可用。已从 `feature/migrate-monorepo-frontend-backend` **合并回父分支 `mvp-foundation`**。
