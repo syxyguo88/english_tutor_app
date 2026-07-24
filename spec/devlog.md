@@ -31,6 +31,22 @@
 
 <!-- 最新条目在最上面 -->
 
+### 2026-07-24 · track-a-last-question-mastery-strip
+
+**摘要**：修复孩子端 `/child/today` 最后一题提交后，今日练习队列、掌握 strip 与作答反馈可能错位的问题。已从 `feature/track-a-last-question-mastery-strip` **合并回父分支 `mvp-foundation`**。
+
+**关键决策**：
+- 仓库层复用 `localDateKey`，让同一本地日历日内已作答题继续保留在 `getTodayPractice` 返回队列中；跨日仍按 `nextReviewAt` 复习策略过滤
+- UI 将作答反馈绑定到步进器当前题，仅当 `latestAttempt.exerciseId === current.id` 时展示，避免浏览其它题时显示全局最近作答
+
+**踩坑 / 经验**：
+- 当前环境没有可用的 `openspec-cn` CLI，且 `npx @openspec-cn/cli` 返回 404；本次按 `/opsx:archive` 约定手动归档并同步长期 spec
+
+**相关产出**：
+- 归档：`openspec/changes/archive/track-a-last-question-mastery-strip/`
+- 长期规格：`openspec/specs/today-practice-feedback-alignment/spec.md`
+- 验证：`npm run verify`
+
 ### 2026-05-22 · post-migration-verification-hardening
 
 **摘要**：在 monorepo 落地后加固工程验证：`npm run verify` 串联 generate/validate/typecheck/lint/test/build；Vitest 与 `verify.mjs` 自动加载仓库根 `.env`；CI `unit` job 增加 seed、build、`RUN_INTEGRATION=1` 测试。已从 `feature/post-migration-verification-hardening` **合并回父分支 `mvp-foundation`**。
