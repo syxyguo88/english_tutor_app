@@ -111,13 +111,21 @@ function PracticeContent({
         </p>
       </section>
 
-      {practice.latestAttempt ? <AttemptFeedback practice={practice} /> : null}
-
       <RecentAttempts attempts={recentAttempts} />
 
       {practice.exercises.length > 0 ? (
         <PracticeStepper
           exercises={practice.exercises.map(toClientExercise)}
+          latestAttempt={
+            practice.latestAttempt
+              ? {
+                  exerciseId: practice.latestAttempt.exerciseId,
+                  isCorrect: practice.latestAttempt.isCorrect,
+                  masteryScore: practice.latestAttempt.masteryScore,
+                  nextReviewAt: practice.latestAttempt.nextReviewAt.toISOString(),
+                }
+              : null
+          }
           submitAttemptAction={submitPracticeAttemptAction}
         />
       ) : (
@@ -167,24 +175,6 @@ function RecentAttempts({ attempts }: { attempts: PracticeAttemptSummary[] }) {
           ))}
         </ul>
       )}
-    </section>
-  );
-}
-
-function AttemptFeedback({ practice }: { practice: TodayPractice }) {
-  const attempt = practice.latestAttempt;
-
-  if (!attempt) {
-    return null;
-  }
-
-  return (
-    <section style={cardStyle} aria-label="作答反馈">
-      <h3 style={{ margin: "0 0 8px", fontSize: 22 }}>{attempt.isCorrect ? "答对了" : "再试一次"}</h3>
-      <p style={{ margin: "0 0 6px", color: "#475569" }}>掌握分：{attempt.masteryScore}</p>
-      <p style={{ margin: 0, color: "#475569" }}>
-        下次复习：{attempt.nextReviewAt.toISOString().slice(0, 10)}
-      </p>
     </section>
   );
 }

@@ -22,7 +22,7 @@
 
 - [x] **migrate-monorepo-frontend-backend** — 将现有根目录 Next 应用迁入 `frontend/`（含 `src/app`、`public`、前端工具链配置）；将 **Prisma**（`schema.prisma`、`migrations/`、`seed.ts`）及**未来独立 HTTP API** 骨架迁入 `backend/`；根目录 **npm/pnpm workspaces**（或等效 monorepo 编排）与 **CI 工作流路径**、**README 本地命令**一并更新；验收后 `spec/structure.md` 与真实目录一致  
 - [x] **post-migration-verification-hardening** — 迁移完成后全量验证：`typecheck`、`lint`、`test`、`test:e2e`、可选 `RUN_INTEGRATION=1`；修复路径相关的 Playwright / Vitest 配置回归  
-- [ ] **track-a-last-question-mastery-strip** — 路线图 **A2**：`getTodayPractice` 最后一题与 `latestAttempt` / 步进器展示一致性（独立 openspec，待执行时拆 proposal）  
+- [x] **track-a-last-question-mastery-strip** — 路线图 **A2**：`getTodayPractice` 最后一题与 `latestAttempt` / 步进器展示一致性（独立 openspec，待执行时拆 proposal）  
 - [ ] **parent-b1-pending-review-entry** — 路线图 **B1**：家长端「待校对」一键入口或列表过滤  
 - [ ] **child-c2-stars-gamification** — 路线图 **C2**：「我的星星」导航与最小可用实现（需先补游戏化 spec 或并入 openspec）  
 - [ ] **e2e-expand-practice-flows** — 路线图 **D2**：扩展 Playwright 覆盖错→留题、对→下一题及上传→校对→孩子见题等主路径  
@@ -34,7 +34,7 @@
 ## 进度概览
 
 - 总任务数：8（本基线块）
-- 已完成：2
+- 已完成：3
 - 进行中：0
 
 （每完成一个任务并归档 openspec 后更新数字）

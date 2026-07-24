@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { LOW_MASTERY_SCORE_THRESHOLD, RECENT_ATTEMPTS_BUFFER_SIZE } from "./constants";
 import { createPrismaPracticeRepository } from "./prisma-practice-repository";
 import { computeDailyPracticeStreak, localDateKey } from "./practice-calendar";
+import { isEligibleForTodayPractice } from "./today-practice-eligibility";
 
 export type ConfirmedPracticeSentence = {
   bookId: string;
@@ -294,14 +295,14 @@ export function createInMemoryPracticeRepository(): PracticeRepository {
           ...exercise,
           mastery: getMastery(input.childId, exercise),
         }))
-        .filter((exercise) => {
-          if (!attemptedExerciseKeys.has(`${input.childId}:${exercise.id}`)) {
-            return true;
-          }
-
-          const nextReviewAt = exercise.mastery.nextReviewAt;
-          return !nextReviewAt || nextReviewAt <= input.now;
-        })
+        .filter((exercise) =>
+          isEligibleForTodayPractice({
+            attempted: attemptedExerciseKeys.has(`${input.childId}:${exercise.id}`),
+            nextReviewAt: exercise.mastery.nextReviewAt,
+            lastAttemptedAt: exercise.mastery.lastAttemptedAt,
+            now: input.now,
+          }),
+        )
         .slice(0, input.limit);
 
       return {

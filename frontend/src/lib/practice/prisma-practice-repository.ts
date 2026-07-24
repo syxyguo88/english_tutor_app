@@ -53,6 +53,7 @@ import {
   localDateKey,
   startOfLocalDay,
 } from "./practice-calendar";
+import { isEligibleForTodayPractice } from "./today-practice-eligibility";
 
 type StoredPracticeExercise = PracticeExerciseDraft & {
   id: string;
@@ -516,11 +517,12 @@ export function createPrismaPracticeRepository(
         const mastery =
           masteryByKey.get(masteryKey) ?? defaultMastery(input.childId, target, exerciseType);
 
-        const attempted = attemptedExerciseIds.has(row.id);
-        const eligible =
-          !attempted ||
-          !mastery.nextReviewAt ||
-          mastery.nextReviewAt <= input.now;
+        const eligible = isEligibleForTodayPractice({
+          attempted: attemptedExerciseIds.has(row.id),
+          nextReviewAt: mastery.nextReviewAt,
+          lastAttemptedAt: mastery.lastAttemptedAt,
+          now: input.now,
+        });
 
         if (eligible) {
           chosenIds.push(row.id);

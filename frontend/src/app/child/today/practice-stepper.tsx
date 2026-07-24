@@ -8,16 +8,28 @@ import { useRouter } from "next/navigation";
 import { ExerciseType } from "@/domain/enums";
 import type { PracticeExerciseDraft } from "@/domain/practice";
 import type { ClientPracticeExercise } from "./client-practice-exercise";
+import type { TodayPractice } from "@/lib/practice/repository";
 
 type ExercisePromptInput = PracticeExerciseDraft & { id: string; createdOrder: number };
 
+/** Serializable latest attempt for RSC → client (ISO date string). */
+export type ClientLatestAttempt = Pick<
+  NonNullable<TodayPractice["latestAttempt"]>,
+  "exerciseId" | "isCorrect" | "masteryScore"
+> & { nextReviewAt: string };
+
 export type PracticeStepperProps = {
   exercises: ClientPracticeExercise[];
+  latestAttempt: ClientLatestAttempt | null;
   /** Bound on the server — avoids UnrecognizedActionError when importing actions inside `"use client"`. */
   submitAttemptAction: (formData: FormData) => Promise<{ isCorrect: boolean }>;
 };
 
-export function PracticeStepper({ exercises, submitAttemptAction }: PracticeStepperProps) {
+export function PracticeStepper({
+  exercises,
+  latestAttempt,
+  submitAttemptAction,
+}: PracticeStepperProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [sessionComplete, setSessionComplete] = useState(false);
@@ -141,8 +153,26 @@ export function PracticeStepper({ exercises, submitAttemptAction }: PracticeStep
         {reviewLabel ? <span>{reviewLabel}</span> : null}
       </section>
 
+      {latestAttempt?.exerciseId === current.id ? (
+        <AttemptFeedback attempt={latestAttempt} />
+      ) : null}
+
       <ExerciseCard exercise={current} onSubmit={handleSubmit} submitting={submitting} />
     </div>
+  );
+}
+
+function AttemptFeedback({ attempt }: { attempt: ClientLatestAttempt }) {
+  const reviewDate = new Date(attempt.nextReviewAt);
+  const reviewDay =
+    Number.isNaN(reviewDate.getTime()) ? attempt.nextReviewAt.slice(0, 10) : reviewDate.toISOString().slice(0, 10);
+
+  return (
+    <section style={cardStyle} aria-label="作答反馈">
+      <h3 style={{ margin: "0 0 8px", fontSize: 22 }}>{attempt.isCorrect ? "答对了" : "再试一次"}</h3>
+      <p style={{ margin: "0 0 6px", color: "#475569" }}>掌握分：{attempt.masteryScore}</p>
+      <p style={{ margin: 0, color: "#475569" }}>下次复习：{reviewDay}</p>
+    </section>
   );
 }
 

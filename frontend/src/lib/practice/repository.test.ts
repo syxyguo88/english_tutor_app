@@ -428,6 +428,12 @@ describe("practice repository", () => {
             textWithBlank: "Please turn the ____.",
           },
         },
+        {
+          sentenceId: "sentence_1",
+          prompt: {
+            textWithBlank: "I can see ____ one.",
+          },
+        },
       ],
     });
   });
@@ -622,6 +628,185 @@ describe("practice repository", () => {
     expect(recent.map((attempt) => attempt.id)).not.toContain(attemptIds[0]);
     expect(recent[0]?.id).toBe(attemptIds[attemptIds.length - 1]);
     expect(recent[RECENT_ATTEMPTS_BUFFER_SIZE - 1]?.id).toBe(attemptIds[1]);
+  });
+
+  it("excludes cross-day attempted exercises when next review is still in the future", async () => {
+    const repository = createInMemoryPracticeRepository();
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+      limit: 5,
+    });
+    const exerciseId = today.exercises[0]?.id ?? "";
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId,
+      answerText: " Page ",
+      now: new Date("2026-05-08T00:00:00.000Z"),
+    });
+
+    const nextDay = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now: new Date("2026-05-09T00:00:00.000Z"),
+      limit: 5,
+    });
+
+    expect(nextDay.exercises.find((exercise) => exercise.id === exerciseId)).toBeUndefined();
+  });
+
+  it("keeps same-day attempted exercises in today's list after correct answer on last queue item", async () => {
+    const repository = createInMemoryPracticeRepository();
+    const now = new Date("2026-05-08T00:00:00.000Z");
+
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+      {
+        bookId: "book_2",
+        pageId: "page_2",
+        pageOrder: 1,
+        sentenceId: "sentence_2",
+        sentenceText: "Please turn the page.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now,
+      limit: 2,
+    });
+    expect(today.exercises).toHaveLength(2);
+
+    const lastExercise = today.exercises[today.exercises.length - 1];
+    expect(lastExercise).toBeDefined();
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: lastExercise?.id ?? "",
+      answerText: " Page ",
+      now,
+    });
+
+    const afterSubmit = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now,
+      limit: 2,
+    });
+
+    expect(afterSubmit.exercises).toHaveLength(2);
+    const retained = afterSubmit.exercises.find((exercise) => exercise.id === lastExercise?.id);
+    expect(retained).toBeDefined();
+    expect(retained?.mastery.masteryScore).toBe(8);
+  });
+
+  it("aligns latestAttempt masteryScore with returned exercise mastery after last queue submit", async () => {
+    const repository = createInMemoryPracticeRepository();
+    const now = new Date("2026-05-08T00:00:00.000Z");
+
+    await repository.ensureFillBlankExercisesFromConfirmedContent([
+      {
+        bookId: "book_1",
+        pageId: "page_1",
+        pageOrder: 1,
+        sentenceId: "sentence_1",
+        sentenceText: "I can see page one.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+      {
+        bookId: "book_2",
+        pageId: "page_2",
+        pageOrder: 1,
+        sentenceId: "sentence_2",
+        sentenceText: "Please turn the page.",
+        knowledgeLinks: [
+          {
+            id: "knowledge_variant_1",
+            knowledgeItemId: "knowledge_item_1",
+            surfaceForm: "page",
+            canonical: "page",
+            variantKind: "base",
+          },
+        ],
+      },
+    ]);
+
+    const today = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now,
+      limit: 2,
+    });
+    const lastExercise = today.exercises[today.exercises.length - 1];
+    expect(lastExercise).toBeDefined();
+
+    await repository.submitAttempt({
+      childId: "prototype-child",
+      exerciseId: lastExercise?.id ?? "",
+      answerText: " Page ",
+      now,
+    });
+
+    const afterSubmit = await repository.getTodayPractice({
+      childId: "prototype-child",
+      now,
+      limit: 2,
+    });
+
+    expect(afterSubmit.latestAttempt).toMatchObject({
+      exerciseId: lastExercise?.id,
+    });
+    const retained = afterSubmit.exercises.find((exercise) => exercise.id === lastExercise?.id);
+    expect(afterSubmit.latestAttempt?.masteryScore).toBe(retained?.mastery.masteryScore);
   });
 
   it("getChildPracticeOverview reflects streak and totals", async () => {
