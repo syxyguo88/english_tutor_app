@@ -1,0 +1,596 @@
+# English Tutor App Project Handoff
+
+Date: 2026-05-06  
+**Last handoff refresh:** 2026-05-12（对接下一任 agent：请读 `current-status.md`、**长期路线图** `plans/2026-05-12-long-term-roadmap.zh.md`、与本节「Latest Handoff Update」）
+
+## Start Here For New Agents
+
+For a short current-state entry point, read:
+
+```text
+docs/superpowers/current-status.md
+```
+
+**长期路线图（A–E，已开发 / 待开发）：** **`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`**（与 `current-status` **「当前开发聚焦」** 同步）。
+
+**产品优先级（stakeholder）：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**（Track A 余量 + C6 已落地；看图裂图非 P0）。
+
+通用技术债与 CI：**`docs/superpowers/plans/2026-05-10-next-development.md`**（P3 等）。
+
+C6 技术规格：**`docs/superpowers/specs/2026-05-11-c6-child-book-review-mvp.zh.md`**。
+
+Use this full handoff as the historical record when deeper context is needed.
+
+## P0 checklist — ship-quality verification (next agent)
+
+**Goal:** Close **`docs/superpowers/plans/2026-05-10-next-development.md`** section **P0** before starting P1 (CI). Use **SDD** (`.cursor/rules/default-subagent-driven-development.mdc`) for multi-file work; mark items `[x]` as you finish.
+
+### P0.1 — E2E path works on a “clean” machine flow
+
+- [x] Read README **Local database** + Playwright notes; confirm **one** coherent sequence from clone → DB → seed → e2e (patch README if any step is missing or wrong).
+- [x] Start Postgres: `docker compose up -d` (or equivalent local Postgres); ensure **`.env`** exists (`cp .env.example .env`).
+- [x] `npx prisma migrate deploy` (or `npm run db:migrate` in dev), then **`npm run db:seed`**, then **`npm run prisma:generate`**.
+- [x] **`npm run playwright:install`** (minimum Chromium; document if WebKit skipped).
+- [x] **`npm run test:e2e`** (default Chromium project) — **all green**.
+- [x] Optional: **`npm run test:e2e:all`** if WebKit browsers installed; if skipped, note “WebKit not installed” in `current-status` or README troubleshooting.
+
+**Done when:** Chromium e2e passes against seeded DB; commands above are copy-pasteable for the next developer.
+
+### P0.2 — Production-like timing spot-check
+
+- [x] **`npm run build`** succeeds with no errors.
+- [x] **`npm run start`** (production server on port 3000 or note alternate port).
+- [x] After warm-up, hit **`/parent/dashboard`** and **`/child/today`**; record rough latency vs same routes on **`npm run dev`** (one-line notes OK).
+- [x] Optional: add a **Verification snapshot** line to **`docs/superpowers/current-status.md`** (build/start timing or “spot-check 2026-__-__”).
+
+**Done when:** You have a subjective sense that prod mode is acceptable; optional snapshot committed.
+
+### P0.3 — Persistence plan doc hygiene (Phase D vs reality)
+
+- [x] Open **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** — **Phase D** section.
+- [x] For each Phase D bullet: set **`[x]`** if done, or add a **short footnote** under the section (“Remaining: …” / “Done in commit …”).
+- [x] If Phase D is fully satisfied, trim **“Recommended Next Work”** in **`docs/superpowers/current-status.md`** so it does not still ask for Phase D as if outstanding (point at **`2026-05-10-next-development.md`** only).
+
+**Done when:** A new agent reading the persistence plan does not get a false “Phase D still open” signal.
+
+---
+
+## Latest Handoff Update
+
+**Updated: 2026-05-11** — 对接**新开 agent**：先读 **`docs/superpowers/current-status.md`**，再读本节与 **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**。
+
+### Branch and tip commit
+
+- **Path:** `/Users/darren/code/build_ai/english_tutor_app`
+- **Branch:** **`mvp-foundation`**
+- **Tip commit（请以 `git log -1` 为准）：** **`0c7f582`** — `fix(book-ingestion): recreate global repo when C6 methods missing (HMR)`（若与本地不符，以你机器 `git log -1` 为准）
+- **Remote sync:** 接手后 **`git fetch`** / **`git status`**；推送若 SSH 失败用 **`.cursor/rules/git-ssh-proxy-bypass.mdc`**（`ssh.github.com:443`）。
+
+### 已完成范围摘要（不必重做）
+
+| 轨道 | 状态 |
+|------|------|
+| **P0** | README 本地 DB/e2e 路径、e2e/build 抽查、Phase D 文档对齐 — **已完成**（见本文件上方 checklist `[x]`）。 |
+| **P1** | **`.github/workflows/ci.yml`**：`unit` + Chromium **`e2e`**；**P1.3** opt-in **`RUN_INTEGRATION=1`** Prisma 集成测试骨架（`*.integration.test.ts`，README 已说明）。 |
+| **P2** | **P2.1–P2.3** 与 **`/parent/books`** 等（见往期 handoff）。 |
+| **孩子端练习流** | **`/child/today`**：**答对后才下一题** + `router.refresh()`；最后一题答对「本轮完成」。计划：`docs/superpowers/plans/2026-05-10-child-practice-stepper-session-flow.md`。 |
+| **C6 绘本复习** | **`/child/book-review`**、**`/child/book-review/[bookId]`**；**`listBooksWithReviewSentencesForFamily`** / **`getBookSentenceReviewList`**；共享 **`src/app/child/child-nav.ts`**；**`getConfirmedPracticeContent`** 已收紧 **`Sentence.confirmedAt`**。规格：`docs/superpowers/specs/2026-05-11-c6-child-book-review-mvp.zh.md`。 |
+| **P3（部分）** | **P3.2** `getRecentAttempts` 只 `select exercise.type`；**P3.3** `PROFILE_CHILD_TODAY_JSON` 门控 JSON 日志；**P3.1** 单页上传 5MiB cap。见 **`2026-05-10-next-development.md`**。 |
+| **Dev 体验** | **`getBookIngestionRepository()`** 若全局缓存缺 C6 方法会**重建实例**（避免 HMR 后 `listBooksWithReviewSentencesForFamily is not a function`）。仍可按习惯 **`rm -rf .next` + 重启 dev** 排障。 |
+
+### Agent workflow (mandatory for plan/handoff work)
+
+- Read **once:** `docs/superpowers/current-status.md`；若动持久化再瞄 **`docs/superpowers/plans/2026-05-08-prisma-persistence.md`** Phase D 脚注。
+- Follow **`.cursor/rules/default-subagent-driven-development.mdc`**：**协调员只派 subagent 做多文件实现**，不要协调员自己写业务代码；每任务 **spec review → code review**。（此前有个别会话未严格遵守 SDD，**后续务必恢复**。）
+- Git：`git-ssh-proxy-bypass.mdc`（GitHub SSH 走 **443** 绕过本地代理）。
+
+### What runs on Postgres vs in-memory
+
+| Layer | Runtime (`get*Repository()`) | Unit tests |
+|-------|------------------------------|------------|
+| Book ingestion | **Prisma** — `src/lib/book-ingestion/prisma-book-repository.ts` wired from `repository.ts` | `createInMemoryBookIngestionRepository()` in `repository.test.ts` |
+| Practice | **Prisma** — `src/lib/practice/prisma-practice-repository.ts` wired from `repository.ts` | `createInMemoryPracticeRepository()` in `repository.test.ts` |
+
+Shared constants (avoid circular imports): `src/lib/practice/constants.ts` (`LOW_MASTERY_SCORE_THRESHOLD`, `RECENT_ATTEMPTS_BUFFER_SIZE`), re-exported from `repository.ts`.
+
+### Database and migrations
+
+- **Compose:** `docker-compose.yml` — Postgres 16, credentials align with `.env.example`.
+- **Migrations:** under `prisma/migrations/` including initial schema + later **`Exercise` ordering / `pageId` / Attempt mastery snapshot** (`20260508133000_exercise_order_page_attempt_mastery_snapshot`).
+- **Seed:** `prisma/seed.ts` — `prototype-family`, `prototype-parent`, `prototype-child`, **`ChildProfile`** with `grade: "G1"`. **`submitAttempt`** expects this profile to exist.
+- **Local setup:** copy `.env.example` → `.env` so **`DATABASE_URL`** is set (required for app, Prisma Studio, and migrations). After pull: `npx prisma migrate deploy`, `npm run db:seed`, `npm run prisma:generate`.
+
+### UX notes (child / parent)
+
+- **`PROFILE_CHILD_TODAY` (perf):** Set **`PROFILE_CHILD_TODAY=1`** in dev to log **`[profile:child-today]`** for `/child/today`. Structured JSON lines need **`PROFILE_CHILD_TODAY_JSON=1`** as well. See README.
+- **`/child/today`:** `PracticeStepper` — client submit + **`submitPracticeAttemptAction`** returns **`{ isCorrect }`**；**答对后才 `setIndex`**；**`router.refresh()`** 刷新掌握分与列表。**P2.3** 顶部「我的练习」卡片 — **`getChildPracticeOverview`**。
+- **`/child/book-review`:** 只读复习；**不**调用 **`syncConfirmedPracticeExercises`**（仍在 **`/child/today`**）。缩略图 **`SentenceThumbnail`**：`onError` 隐藏；看图 data URL 裂图**非本阶段 P0**（见 phase priorities）。
+- **Serialization:** `client-practice-exercise.ts` — `toClientExercise()` stays in a **non-**`"use client"` module.
+- **Parent dashboard:** 「待复核 AI 判断」占位；**`/parent/books`** 列表 + **`/parent/books/new`** 上传 + **`/[bookId]/review`** 校对。
+
+### Product boundaries (unchanged intent)
+
+Still a **family prototype**: deterministic practice/OCR mock, no real AI grading, images often **data URLs stored as strings** in the DB (not object storage), no production auth. Long-term goals remain in `docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md`.
+
+### Verification snapshot (last recorded)
+
+```bash
+npm run prisma:generate
+npm run typecheck   # pass
+npm run lint        # pass
+npm run test        # Vitest：约 12 files / 63 passed + 1 integration skipped（无 RUN_INTEGRATION）
+```
+
+**CI:** `.github/workflows/ci.yml` — `push`/`pull_request` 至 **`main`** / **`mvp-foundation`**；合并前在 GitHub Actions 确认 **Unit** + **E2E** 均绿。
+
+After major persistence or UX changes: re-run **`npm run test:e2e`**（Postgres + seed；端口占用时用 **`E2E_PORT=`**）。
+
+### Known caveats
+
+- **Docker:** some networks cannot pull `postgres` from Docker Hub; use registry mirrors or install Postgres via Homebrew instead.
+- **Next.js:** `Cannot find module './NNN.js'` or stale Server Actions — delete **`.next`** and restart dev server.
+- **Prisma Studio:** requires **`DATABASE_URL`** in environment (`.env` at project root).
+- **Exercise `createdOrder`:** concurrent `ensure*` could theoretically collide under extreme parallelism (acceptable for prototype).
+- **P2.3 streak:** Prisma 路径对 streak 会拉取该孩子全部 **`Attempt.createdAt`** 再聚日（原型可接受）；数据极大时可改为 SQL `DATE` 聚合（见 **`2026-05-10-next-development.md`** P3）。
+
+### Recommended next tasks
+
+1. **长期路线图：** **`docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md`** — 看 A–E 状态与 **§当前迭代聚焦**（与 `current-status` 同步）。
+2. **Track A 余量、可选 C6 e2e：** **`docs/superpowers/plans/2026-05-11-phase-priorities-parent-child.md`**
+3. **P3 / Prisma 7 / CI 细节：** **`docs/superpowers/plans/2026-05-10-next-development.md`**
+4. **Process:** 多文件 **SDD**；需要 TDD 时 **先测后码**。
+5. **长线产品：** `docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md`
+
+### One-Line Handoff
+
+```text
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation (tip: git log -1). Read docs/superpowers/plans/2026-05-12-long-term-roadmap.zh.md (A–E + §当前迭代聚焦), docs/superpowers/current-status.md, and this handoff “Latest Handoff Update”. SDD + git-ssh-proxy-bypass.mdc for GitHub SSH.
+```
+
+## Repository
+
+Project path:
+
+```text
+/Users/darren/code/build_ai/english_tutor_app
+```
+
+Current branch:
+
+```text
+mvp-foundation
+```
+
+Primary documents:
+
+- Spec: `docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md`
+- MVP Foundation plan: `docs/superpowers/plans/2026-05-05-mvp-foundation.md`
+
+## Project Goal
+
+Build a family-use English picture-book learning Web App prototype for a first-grade child.
+
+The target learning loop is:
+
+1. Parent or child uploads paper picture-book pages by taking photos.
+2. AI/OCR extracts English sentences, words, and phrases.
+3. Parent reviews and confirms extracted content.
+4. Confirmed content enters the book, sentence, word/phrase, and knowledge libraries.
+5. The app generates targeted exercises.
+6. The child answers by keyboard or speech-to-text where suitable.
+7. AI performs initial grading and error attribution.
+8. Parent can review uncertain or important AI judgments.
+9. The app updates mastery stats.
+10. The app schedules review using forgetting-curve-style intervals.
+
+The first version is a cloud-hosted Web App prototype for one family. It is not a public SaaS product and not a native iOS app.
+
+## Spec Summary
+
+The confirmed design is in:
+
+```text
+docs/superpowers/specs/2026-05-04-private-english-tutor-app-design.zh.md
+```
+
+Key product decisions:
+
+- Cloud Web App usable from iPad, iPhone, and desktop browsers.
+- Parent account and child account.
+- Parent uploads picture-book page images.
+- Parent can also upload optional companion audio such as mp3 or m4a.
+- AI OCR extracts text, sentence candidates, words, and phrases.
+- AI can transcribe companion audio and align audio segments with confirmed sentences.
+- AI output is draft-only until parent confirmation.
+- Unconfirmed content must not enter official exercises, mastery stats, or review scheduling.
+- Each book page stores two image assets:
+  - Original image for review, debugging, and reprocessing.
+  - Text-removed image for picture-based recall exercises.
+- Companion audio is not a standalone listening-question system in v1. It is used as context or hints inside the picture-to-sentence exercise.
+- The app keeps original images and audio in the prototype stage for review and debugging.
+- The app does not perform pronunciation scoring or complex fluency scoring in v1.
+- The app does not infer interests automatically in v1; parent sets lightweight interest tags.
+
+Core exercise types:
+
+- Fill-in-the-blank.
+- Picture-to-sentence.
+- Grammar error correction.
+- Sentence creation with a word or phrase.
+
+Picture-to-sentence audio hint modes:
+
+- If one image has multiple confirmed sentences, play the first sentence and ask the child to produce the next sentence.
+- Play the last sentence from the previous page or previous image and ask the child to produce the current image's sentence.
+
+Mastery tracking granularity:
+
+```text
+child + knowledge item + variant + exercise type
+```
+
+Examples:
+
+- `book` as item, `books` as plural variant, in fill-in-the-blank.
+- `be verb agreement` as grammar item, `they are` as variant, in grammar error correction.
+- `by bus` as phrase item, in sentence creation.
+
+Initial review schedule:
+
+- Same day.
+- Day 1.
+- Day 3.
+- Day 7.
+- Day 14.
+- Day 30.
+
+Scheduling adjusts by performance:
+
+- Wrong answers shorten interval and increase priority.
+- Consecutive correct answers lengthen interval and reduce priority.
+- Low mastery score items can be pulled into today's practice.
+
+## Implementation Plan
+
+The current implementation plan is:
+
+```text
+docs/superpowers/plans/2026-05-05-mvp-foundation.md
+```
+
+This plan only covers the MVP foundation. It intentionally does not implement OCR, AI calls, uploads, file storage, image processing, audio alignment workers, practice generation, or production authentication.
+
+Later plans should be split roughly as:
+
+1. `Book Ingestion`
+2. `Practice And Mastery`
+3. `Parent And Child UX Polish`
+
+MVP Foundation task list:
+
+1. Project tooling and baseline app.
+2. Domain rules for confirmation gates.
+3. Mastery calculation foundation.
+4. Database schema for MVP foundation.
+5. Role routing and app shell.
+6. Browser smoke tests.
+7. Final foundation verification.
+
+## Current Git History
+
+Recent commits on `mvp-foundation`:
+
+```text
+dcc1dce feat: add Prisma foundation schema
+818f2e9 feat: add mastery scoring foundation
+e6b8274 fix: harden content practice gates
+243dc7e feat: add content confirmation gate rules
+d6feea1 fix: resolve Vitest setup path
+880ee90 chore: keep foundation plan scoped
+27b8ea3 chore: scaffold Next.js foundation
+5fc400d Add MVP foundation implementation plan
+e956ca6 Add Chinese design spec for English tutor app
+```
+
+## Current Progress
+
+Completed and reviewed:
+
+- Task 1: Project tooling and baseline app.
+- Task 2: Domain rules for confirmation gates.
+- Task 3: Mastery calculation foundation.
+
+Implemented but not yet reviewed:
+
+- Task 4: Database schema for MVP foundation.
+
+Not started:
+
+- Task 5: Role routing and app shell.
+- Task 6: Browser smoke tests.
+- Task 7: Final foundation verification.
+
+Important handoff point:
+
+```text
+Task 4 has been implemented and committed as dcc1dce, but it still needs spec compliance review and code quality review.
+```
+
+## Implemented Files
+
+Project/tooling:
+
+- `.env.example`
+- `.gitignore`
+- `eslint.config.mjs`
+- `next-env.d.ts`
+- `next.config.ts`
+- `package-lock.json`
+- `package.json`
+- `playwright.config.ts`
+- `postcss.config.mjs`
+- `tailwind.config.ts`
+- `tsconfig.json`
+- `vitest.config.ts`
+- `vitest.setup.ts`
+
+App shell baseline:
+
+- `src/app/globals.css`
+- `src/app/layout.tsx`
+- `src/app/page.tsx`
+
+Domain foundation:
+
+- `src/domain/enums.ts`
+- `src/domain/content-rules.ts`
+- `src/domain/content-rules.test.ts`
+- `src/domain/mastery.ts`
+- `src/domain/mastery.test.ts`
+
+Database foundation:
+
+- `prisma/schema.prisma`
+- `src/lib/db.ts`
+
+## Implemented Behavior Details
+
+### Content Gate Rules
+
+File:
+
+```text
+src/domain/content-rules.ts
+```
+
+Implemented rules:
+
+- `canUseSentenceForPractice`
+  - Requires `confirmedAt` to be a real valid `Date`.
+  - `null` and invalid Date objects are rejected.
+- `canUsePageForPicturePractice`
+  - Requires `BookPageStatus.Confirmed`.
+  - Requires `TextRemovedImageStatus.Accepted`.
+- `canUseAudioHintForPractice`
+  - Requires `AudioSegmentStatus.Confirmed`.
+  - Requires integer millisecond bounds.
+  - Requires `startsAtMs >= 0`.
+  - Requires `endsAtMs > startsAtMs`.
+
+Task 2 had a review finding that `new Date("invalid")` passed because invalid dates are still `instanceof Date`. This was fixed in commit:
+
+```text
+e6b8274 fix: harden content practice gates
+```
+
+### Mastery Functions
+
+File:
+
+```text
+src/domain/mastery.ts
+```
+
+Implemented functions:
+
+- `createMasteryKey`
+  - Returns `childId:knowledgeItemId:knowledgeVariantId:exerciseType`.
+- `calculateNextMastery`
+  - Clamps score to `0..100`.
+  - Correct answer: `previous + 8 + consecutiveCorrect * 4`, then increments streak.
+  - Wrong answer: `previous - 18`, then resets streak to `0`.
+- `scheduleNextReview`
+  - Wrong answer: 1 day.
+  - Correct answer default: 3 days.
+  - Correct streak `>= 2`: 7 days.
+  - Correct streak `>= 3`: 14 days.
+  - Correct streak `>= 5`: 30 days.
+  - Copies the input date before mutation.
+
+Task 3 code review found no blocking issues. Minor future-hardening suggestions:
+
+- Add boundary tests for score floor/ceiling.
+- Add interval boundary tests for streaks `0`, `2`, `3`, `5`.
+- Add test that `scheduleNextReview` does not mutate source `Date`.
+- Consider input validation for invalid `consecutiveCorrect` values in a later pass.
+
+### Prisma Schema
+
+File:
+
+```text
+prisma/schema.prisma
+```
+
+Major models:
+
+- `Family`
+- `User`
+- `ChildProfile`
+- `InterestTag`
+- `Book`
+- `BookPage`
+- `BookAudio`
+- `Sentence`
+- `SentenceAudioSegment`
+- `KnowledgeItem`
+- `KnowledgeVariant`
+- `SentenceKnowledgeLink`
+- `Exercise`
+- `Attempt`
+- `MasteryStat`
+- `ReviewQueueItem`
+
+Task 4 verification already performed by controller:
+
+```bash
+DATABASE_URL="postgresql://english_tutor:english_tutor@localhost:5432/english_tutor_app?schema=public" npm run prisma:validate
+```
+
+Result:
+
+```text
+The schema at prisma/schema.prisma is valid
+```
+
+`prisma generate` required elevated permissions because Prisma tried to update the user-level engine cache:
+
+```text
+/Users/darren/.cache/prisma/...
+```
+
+It passed after rerunning with approval.
+
+`npm run typecheck` passed after Task 4.
+
+Task 4 still needs review:
+
+- Spec compliance review.
+- Code quality review.
+
+## Environment Notes
+
+`npm install` initially stalled without output. It succeeded when run through local proxy:
+
+```bash
+http_proxy=http://127.0.0.1:7897 https_proxy=http://127.0.0.1:7897 npm install
+```
+
+`npm install` reported:
+
+```text
+2 moderate severity vulnerabilities
+```
+
+No `npm audit fix --force` was run because it can introduce breaking dependency changes and was not part of the plan.
+
+Prisma commands that need `DATABASE_URL` can use:
+
+```bash
+DATABASE_URL="postgresql://english_tutor:english_tutor@localhost:5432/english_tutor_app?schema=public"
+```
+
+No `.env` file has been committed.
+
+Ignored local/generated files currently include:
+
+```text
+docs/superpowers/.DS_Store
+docs/superpowers/specs/.DS_Store
+node_modules/
+tsconfig.tsbuildinfo
+```
+
+## Verification Already Run
+
+Known successful commands:
+
+```bash
+npm run typecheck
+npm run test -- src/domain/content-rules.test.ts
+npm run test -- src/domain/mastery.test.ts
+DATABASE_URL="postgresql://english_tutor:english_tutor@localhost:5432/english_tutor_app?schema=public" npm run prisma:validate
+DATABASE_URL="postgresql://english_tutor:english_tutor@localhost:5432/english_tutor_app?schema=public" npm run prisma:generate
+```
+
+Latest `npm run typecheck` was rerun on 2026-05-06 and exited `0`.
+
+## Review History
+
+Task 1:
+
+- Initial worker stalled; controller implemented directly.
+- `npm install` succeeded through local proxy.
+- `npm run typecheck` passed.
+- Spec review initially found out-of-scope plan edit involving `*.tsbuildinfo`; fixed by `880ee90`.
+- Code review initially flagged empty test suites; after staged-plan context, reviewer agreed Task 1 can proceed because tests are introduced in Tasks 2 and 6.
+
+Task 2:
+
+- Worker wrote files but stalled before commit; controller took over.
+- Target test initially exposed Vitest setup path issue.
+- `vitest.config.ts` fixed in `d6feea1` to use `fileURLToPath(new URL(...))`.
+- Task 2 committed in `243dc7e`.
+- Code review found invalid Date bug.
+- Bug fixed in `e6b8274`.
+- Spec and code quality reviews passed after fix.
+
+Task 3:
+
+- Worker completed and committed `818f2e9`.
+- Spec compliance passed.
+- Code quality passed.
+- Minor non-blocking suggestions recorded above.
+
+Task 4:
+
+- Worker wrote files but stalled before reporting; controller took over.
+- `prisma validate`, `prisma generate`, and `typecheck` passed.
+- Committed `dcc1dce`.
+- Review not completed due to subagent usage limit.
+
+## Next Agent Instructions
+
+Start here:
+
+```text
+/Users/darren/code/build_ai/english_tutor_app
+```
+
+Confirm current branch:
+
+```bash
+git status --short --branch
+```
+
+Expected branch:
+
+```text
+mvp-foundation
+```
+
+Recommended next steps:
+
+1. Review Task 4 spec compliance:
+   - Compare `prisma/schema.prisma` and `src/lib/db.ts` against Task 4 in `docs/superpowers/plans/2026-05-05-mvp-foundation.md`.
+   - Confirm no extra files or unrelated behavior were added.
+2. Review Task 4 code quality:
+   - Check Prisma relations, indexes, cascading behavior, optional relations, and future maintainability.
+   - Pay attention to `SentenceKnowledgeLink` uniqueness with nullable `knowledgeVariantId`, and to whether `MasteryStat.knowledgeVariantId` should be required in the MVP foundation.
+3. If Task 4 reviews pass, continue Task 5 from the plan:
+   - Role routing helpers.
+   - App shell components.
+   - Parent dashboard route.
+   - Child today route.
+4. Continue subagent-driven workflow where possible:
+   - Implement task.
+   - Spec compliance review.
+   - Code quality review.
+   - Fix any important/critical issues.
+   - Only then move to the next task.
+
+One-line handoff:
+
+```text
+Take over /Users/darren/code/build_ai/english_tutor_app on branch mvp-foundation. Task 1-3 are complete and reviewed. Task 4 is implemented and committed as dcc1dce but still needs spec compliance and code quality review. Continue from Task 4 review, then proceed to Task 5 in docs/superpowers/plans/2026-05-05-mvp-foundation.md.
+```

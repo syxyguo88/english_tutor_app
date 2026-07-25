@@ -1,0 +1,50 @@
+---
+description: Git GitHub SSH must bypass local proxy (use ssh.github.com:443); do not rediscover each push
+alwaysApply: true
+---
+
+# Git / GitHub — bypass local proxy (mandatory)
+
+On this machine, **plain SSH to `github.com:22` often fails** (e.g. `Connection closed by 127.0.0.1 port 7897`, `kex_exchange_identification`) because traffic goes through a **local HTTP/SOCKS proxy**. **Do not** waste turns retrying or “exploring”; use the bypass below **every time** you run Git over SSH to GitHub.
+
+## When this applies
+
+Any **`git`** operation that uses **`git@github.com`** / SSH remote: **`push`**, **`fetch`**, **`pull`**, **`ls-remote`**, etc.
+
+## Required workaround (pick one)
+
+### A — One-shot command prefix (preferred for agents)
+
+Use GitHub’s SSH **HTTPS port** so traffic does not hit the broken proxied path:
+
+```bash
+GIT_SSH_COMMAND='ssh -o Hostname=ssh.github.com -o Port=443 -o User=git' git <subcommand> ...
+```
+
+Example:
+
+```bash
+GIT_SSH_COMMAND='ssh -o Hostname=ssh.github.com -o Port=443 -o User=git' git push -u origin mvp-foundation
+```
+
+### B — Persistent user config (human machines)
+
+In **`~/.ssh/config`**:
+
+```ssh-config
+Host github.com
+  HostName ssh.github.com
+  Port 443
+  User git
+```
+
+Then normal `git push` works without `GIT_SSH_COMMAND`.
+
+## Do not
+
+- Rely on unsetting `HTTP_PROXY` alone for SSH — **SSH is not HTTP**; the failure mode here is specific to **GitHub SSH over port 22** vs **local proxy**.
+- Change `origin` to HTTPS in the repo unless the user explicitly asks — prefer **A** or **B**.
+
+## Evidence
+
+GitHub documents SSH over port 443 (`ssh.github.com`). This matches the fix that succeeded for pushes in this project’s environment.

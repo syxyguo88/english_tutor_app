@@ -1,0 +1,33 @@
+{
+  "name": "english-tutor-app",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "npm run dev -w @english-tutor/frontend",
+    "build": "npm run build -w @english-tutor/frontend",
+    "start": "npm run start -w @english-tutor/frontend",
+    "lint": "npm run lint -w @english-tutor/frontend",
+    "typecheck": "npm run typecheck -w @english-tutor/frontend",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "playwright:install": "playwright install",
+    "test:e2e": "node scripts/run-e2e.mjs --project=chromium",
+    "test:e2e:all": "node scripts/run-e2e.mjs",
+    "db:up": "docker compose up -d",
+    "db:migrate": "npm run db:migrate -w @english-tutor/backend",
+    "db:seed": "npm run db:seed -w @english-tutor/backend",
+    "prisma:validate": "npm run prisma:validate -w @english-tutor/backend",
+    "prisma:generate": "npm run prisma:generate -w @english-tutor/backend",
+    "verify": "node scripts/verify.mjs",
+    "verify:integration": "node scripts/verify.mjs --integration",
+    "verify:e2e": "node scripts/verify.mjs --e2e",
+    "verify:all": "node scripts/verify.mjs --integration --e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "dotenv": "^16.5.0",
+    "vitest": "^3.1.3"
+  }
+}
